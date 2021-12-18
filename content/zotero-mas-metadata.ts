@@ -7,7 +7,8 @@ import { getData, setData, removeData, getPref, clearPref, loadURI, getValueWith
 import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
 import { MASProgressWindow } from './mas-progress-window'
-import { requestChain } from './mas-api-request'
+// import { requestChain } from './mas-api-request'
+import { requestChainS2 } from './s2-api-request'
 
 const DATA_JSON_NAME = 'MASMetaData.json'
 
@@ -276,9 +277,8 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     switch (operation) {
       case 'update':
         this.progressWin = new MASProgressWindow('update', items.length)
-        const attributesForRequest = Object.values(attributes.request).join(',')
         items.forEach(item => {
-          requestChain(item, attributesForRequest)
+          requestChainS2(item)
             .then(async (data: any) => {
               data.lastUpdated = new Date()
               await this.setMASMetaData(item, data)
