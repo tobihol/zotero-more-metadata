@@ -2,24 +2,6 @@ declare const Zotero: any
 
 const baseUrl = 'https://api.semanticscholar.org/graph/v1/'
 
-const paperFields = [
-  'paperId', // Always included
-  'externalIds',
-  'url',
-  'title', // Included if no fields are specified
-  'abstract',
-  'venue',
-  'year',
-  'referenceCount',
-  'citationCount',
-  'influentialCitationCount',
-  'isOpenAccess',
-  'fieldsOfStudy',
-  // Up to 500 authors will be returned
-  'authors.authorId', // Always included
-  'authors.name',
-]
-
 function makeRequest(opts) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -68,40 +50,41 @@ function makeS2Request(reqType, params) {
   })
 }
 
-function searchPaper(query) {
+function searchPaper(query, fields) {
   return makeS2Request('paper/search?', {
     query,
     offset: 0,
     limit: 10,
-    fields: paperFields,
+    fields,
   })
 }
 
-function getPaperWithS2Id(s2id) {
+function getPaperWithS2Id(s2id, fields) {
   const es2id = encodeURIComponent(s2id)
   return makeS2Request(`paper/${es2id}?`, {
-    fields: paperFields,
+    fields,
   })
 }
 
-function getPaperWithDoi(doi) {
+function getPaperWithDoi(doi, fields) {
   const edoi = encodeURIComponent(doi)
   return makeS2Request(`paper/DOI:${edoi}?`, {
-    fields: paperFields,
+    fields,
   })
 }
 
-export function requestChainS2(item) {
+export function requestChainS2(item, fields) {
   return new Promise((resolve, reject) => {
     const doi = item.getField('DOI')
     if (!doi) {
       reject("Entry doesn't have a DOI.")
     }
-    getPaperWithDoi(doi).then((resp=>{
+    getPaperWithDoi(doi, fields).then((resp=>{
       resolve(resp)
     })
     ).catch(err=>{
-      reject(err)
+      // semantic scholar cant find the doi
+      reject(`S2 can't find the DOI ${doi}`)
     }
     )
   })

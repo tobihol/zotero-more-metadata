@@ -277,8 +277,9 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     switch (operation) {
       case 'update':
         this.progressWin = new MASProgressWindow('update', items.length)
+        const attributesForRequest = Object.values(attributes.request).join(',')
         items.forEach(item => {
-          requestChainS2(item)
+          requestChainS2(item, attributesForRequest)
             .then(async (data: any) => {
               data.lastUpdated = new Date()
               await this.setMASMetaData(item, data)
@@ -307,10 +308,6 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       return this.getString('GetData.ItemNotInDatabase')
     }
     const masData = this.masDatabase[item.id]
-    // dont show metadata if the probability of the correct metadata having been found is to low
-    if (!(['lastUpdated', 'logprob', 'entity.Id'].includes(masAttr)) && masData.logprob < getPref('logprob')) {
-      return this.getString('GetData.DataUnderCutoff')
-    }
 
     let value = masData[masAttr]
 
@@ -324,16 +321,6 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       // display as date
       case 'lastUpdated':
         value = new Date(value).toLocaleString()
-        break
-      // only display fields with no parent fields (level 0 fields)
-      case 'entity.F':
-        const tmp = []
-        value.forEach(field => {
-          if (field.FId in attributes.FieldsOfStudy) {
-            tmp.push(field.DFN)
-          }
-        })
-        value = tmp
         break
       default:
         break
