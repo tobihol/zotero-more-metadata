@@ -2,7 +2,8 @@ declare const Zotero: any
 
 const closeTimer = 4000
 
-export class MASProgressWindow{
+export class MASProgressWindow {
+  public finished: boolean = false
   private progressWin: any
   private nAll: number = 0
   private nDone: number = 0
@@ -10,7 +11,7 @@ export class MASProgressWindow{
   private operation: string
 
   constructor(operation: string, nAll: number) {
-    this.progressWin = new Zotero.ProgressWindow({closeOnClick: false})
+    this.progressWin = new Zotero.ProgressWindow({ closeOnClick: false })
     this.progressWin.progress = new this.progressWin.ItemProgress()
     this.operation = operation
     this.nAll = nAll
@@ -20,38 +21,36 @@ export class MASProgressWindow{
     this.progressWin.show()
   }
 
-  public next(fail=false) {
+  public next(fail = false) {
     if (fail) this.nFail++
     this.nDone++
     const percent = Math.round((this.nDone / this.nAll) * 100) // tslint:disable-line:no-magic-numbers
     this.progressWin.progress.setProgress(percent)
     this.updateText()
-    if (this.isFinished()) {
-      try {
-        this.progressWin.close()
-        this.endWindow(this.operation)
-      } catch (error) {
-        Zotero.logError(error)
-      }
-    }
   }
 
-  public isFinished() {
-    return (this.nDone >= this.nAll)
+  public finish() {
+    this.finished = true
+    try {
+      this.progressWin.close()
+      this.endWindow(this.operation)
+    } catch (error) {
+      Zotero.logError(error)
+    }
   }
 
   private updateHeadline() {
     const icon = `chrome://zotero/skin/toolbar-advanced-search${Zotero.hiDPI ? '@2x' : ''}.png`
     let headline = 'Default headline'
     switch (this.operation) {
-        case 'update':
-            headline = Zotero.MASMetaData.getString('MASProgressWindow.headline.update')
-            break
-        case 'remove':
-            headline = Zotero.MASMetaData.getString('MASProgressWindow.headline.remove')
-            break
-        default:
-            break
+      case 'update':
+        headline = Zotero.MASMetaData.getString('MASProgressWindow.headline.update')
+        break
+      case 'remove':
+        headline = Zotero.MASMetaData.getString('MASProgressWindow.headline.remove')
+        break
+      default:
+        break
     }
     this.progressWin.changeHeadline(headline, icon)
   }

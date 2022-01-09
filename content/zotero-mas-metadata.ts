@@ -8,7 +8,7 @@ import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
 import { MASProgressWindow } from './mas-progress-window'
 import { requestChainS2 } from './s2-api-request'
-import { writeItemsToDB, readAllItemsFromDB, deleteEntriesByDOI } from './db'
+import { DBConnection } from './db'
 
 const MASMetaData = new class { // tslint:disable-line:variable-name
   public masDatabase: object = {}
@@ -72,8 +72,11 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private async loadAllMasData() {
-    const listOfItems = await readAllItemsFromDB()
-    this.masDatabase = this.listToObjectDB(listOfItems)
+    const conn = new DBConnection()
+    await conn.createTable() // TODO make this more descriptive
+    await conn.check()
+    this.masDatabase = await conn.readAllItemsFromDB()
+    conn.close()
   }
 
   private listToObjectDB(list) {
@@ -143,7 +146,8 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
      * patches for tab
      */
 
-    $patch$(ZoteroItemPane, 'viewItem', original => async function(item, _mode, _index) {
+    // tslint:disable-next-line: space-before-function-paren
+    $patch$(ZoteroItemPane, 'viewItem', original => async function (item, _mode, _index) {
       await original.apply(this, arguments)
       if (!item.isNote() && !item.isAttachment()) {
         Object.keys(attributesToDisplay).forEach(attr => {
@@ -161,7 +165,8 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
      * patches for columns 
      */
 
-    $patch$(Zotero.Item.prototype, 'getField', original => function(field, unformatted, includeBaseMapped) {
+    // tslint:disable-next-line: space-before-function-paren
+    $patch$(Zotero.Item.prototype, 'getField', original => function (field, unformatted, includeBaseMapped) {
       if (typeof field === 'string') {
         const match = field.match(/^mas-metadata-/)
         if (match) {
@@ -179,7 +184,8 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       return original.apply(this, arguments)
     })
 
-    $patch$(Zotero.ItemTreeView.prototype, 'getCellText', original => function(row, col) {
+    // tslint:disable-next-line: space-before-function-paren
+    $patch$(Zotero.ItemTreeView.prototype, 'getCellText', original => function (row, col) {
       const match = col.id.match(/^zotero-items-column-mas-metadata-/)
       if (!match) return original.apply(this, arguments)
       const item = this.getRow(row).ref
@@ -194,7 +200,8 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
      * patches for columns submenu
      */
 
-    $patch$(Zotero.ItemTreeView.prototype, 'onColumnPickerShowing', original => function(event) {
+    // tslint:disable-next-line: space-before-function-paren
+    $patch$(Zotero.ItemTreeView.prototype, 'onColumnPickerShowing', original => function (event) {
       const menupopup = event.originalTarget
 
       const ns = 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul'
@@ -267,33 +274,41 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 
   private async updateItems(items, operation) {
     items = this.filterItems(items)
-    if (items.length === 0 || (this.progressWin && !this.progressWin.isFinished())) return
+    if (items.length === 0 || (this.progressWin && !this.progressWin.finished)) return
+    const conn = new DBConnection()
     switch (operation) {
       case 'update':
         this.progressWin = new MASProgressWindow('update', items.length)
+        const promises = []
         const attributesToRequest = Object.values(attributes.request).join(',')
-        items.forEach(item => {
-          requestChainS2(item, attributesToRequest)
+        for (const item of items) {
+          const promise = requestChainS2(item, attributesToRequest)
             .then(async (data: any) => {
-              data.DOI = item.getField('DOI')
-              data.lastUpdated = new Date().toISOString()
-              await this.setMASMetaData([data])
+              await this.setMASMetaData(conn, item, data)
               this.progressWin.next()
             })
             .catch(error => {
               this.progressWin.next(true)
-              Zotero.alert(null, 'MAS MetaData', error)
+              Zotero.alert(null, 'MAS MetaData', `${error}`)
             })
+          promises.push(promise)
+        }
+        Promise.all(promises).finally(() => {
+          conn.close()
+          this.progressWin.finish()
         })
         break
       case 'remove':
         this.progressWin = new MASProgressWindow('remove', items.length)
-        items.forEach(async item => {
-          await this.removeMASMetaData(item)
+        for (const item of items) {
+          await this.removeMASMetaData(conn, item)
           this.progressWin.next()
-        })
+        }
+        conn.close()
+        this.progressWin.finish()
         break
       default:
+        conn.close()
         break
     }
   }
@@ -325,15 +340,26 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     return value
   }
 
-  private async setMASMetaData(data: 'object'[]) {
-    await writeItemsToDB(data)
-    await this.loadAllMasData() // TODO make this more efficient by only setting the written data
+  private async setMASMetaData(conn: DBConnection, item: any, data: any) {
+    const DOI = item.getField('DOI')
+    data.lastUpdated = new Date().toISOString()
+    const entry = { DOI, data }
+    await conn.writeItemsToDB([entry])
+
+    const newEntry = await conn.readItemFromDB(DOI)
+    if (newEntry) this.masDatabase[DOI] = newEntry.data
+
+    // this.masDatabase[data.DOI] = data
   }
 
-  private async removeMASMetaData(item) {
-    const doi = item.getField('DOI')
-    await deleteEntriesByDOI([doi])
-    await this.loadAllMasData() // TODO make this more efficient by only setting the written data
+  private async removeMASMetaData(conn: DBConnection, item) {
+    const DOI = item.getField('DOI')
+    await conn.deleteEntriesByDOI([DOI])
+
+    const entry = await conn.readItemFromDB(DOI)
+    if (!entry) delete this.masDatabase[DOI]
+
+    // delete this.masDatabase[DOI]
   }
 }
 
