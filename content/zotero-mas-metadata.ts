@@ -7,10 +7,8 @@ import { getData, setData, removeData, getPref, clearPref, loadURI, getValueWith
 import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
 import { MASProgressWindow } from './mas-progress-window'
-// import { requestChain } from './mas-api-request'
 import { requestChainS2 } from './s2-api-request'
-
-const DATA_JSON_NAME = 'MASMetaData.json'
+import { writeItemsToDB, readAllItemsFromDB, deleteEntriesByDOI } from './db'
 
 const MASMetaData = new class { // tslint:disable-line:variable-name
   public masDatabase: object = {}
@@ -74,21 +72,17 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private async loadAllMasData() {
-    const items = await this.getAllItems()
-    items.forEach(item => {
-      this.loadMasData(item)
-    })
+    const listOfItems = await readAllItemsFromDB()
+    this.masDatabase = this.listToObjectDB(listOfItems)
   }
 
-  private loadMasData(item) {
-    const masData = getData(item, DATA_JSON_NAME)
-    const id = item.id
-    this.masAttributes.forEach(masAttr => {
-      if (!(id in this.masDatabase)) {
-        this.masDatabase[id] = {}
-      }
-      this.masDatabase[id][masAttr] = getValueWithKeyString(masData, masAttr)
-    })
+  private listToObjectDB(list) {
+    const res = {}
+    for (const value of list) {
+      const key = value.DOI
+      res[key] = value
+    }
+    return res
   }
 
   private async getAllItems() {
@@ -178,7 +172,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
             const value = MASMetaData.getMASMetaData(item, masAttr)
             return value
           } else {
-            return ''
+            return '' // TODO: do proper error handling here
           }
         }
       }
@@ -266,7 +260,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 
   private filterItems(items: any[]): any[] {
     items = items.filter(item => item.isTopLevelItem())
-    items = items.filter(item => item.getField('title'))
+    items = items.filter(item => item.getField('DOI'))
     items = items.filter(item => !item.isNote() && !item.isAttachment())
     return items
   }
@@ -277,17 +271,18 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     switch (operation) {
       case 'update':
         this.progressWin = new MASProgressWindow('update', items.length)
-        const attributesForRequest = Object.values(attributes.request).join(',')
+        const attributesToRequest = Object.values(attributes.request).join(',')
         items.forEach(item => {
-          requestChainS2(item, attributesForRequest)
+          requestChainS2(item, attributesToRequest)
             .then(async (data: any) => {
-              data.lastUpdated = new Date()
-              await this.setMASMetaData(item, data)
+              data.DOI = item.getField('DOI')
+              data.lastUpdated = new Date().toISOString()
+              await this.setMASMetaData([data])
               this.progressWin.next()
             })
             .catch(error => {
               this.progressWin.next(true)
-              Zotero.alert(null, 'MAS MetaData', JSON.stringify(error))
+              Zotero.alert(null, 'MAS MetaData', error)
             })
         })
         break
@@ -304,10 +299,12 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private getMASMetaData(item, masAttr) {
-    if (!(item.id in this.masDatabase)) {
+    const doi = item.getField('DOI')
+
+    if (!(doi in this.masDatabase)) {
       return this.getString('GetData.ItemNotInDatabase')
     }
-    const masData = this.masDatabase[item.id]
+    const masData = this.masDatabase[doi]
 
     let value = masData[masAttr]
 
@@ -328,14 +325,15 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     return value
   }
 
-  private async setMASMetaData(item, data) {
-    await setData(item, data, DATA_JSON_NAME)
-    this.loadMasData(item)
+  private async setMASMetaData(data: 'object'[]) {
+    await writeItemsToDB(data)
+    await this.loadAllMasData() // TODO make this more efficient by only setting the written data
   }
 
   private async removeMASMetaData(item) {
-    await removeData(item, DATA_JSON_NAME)
-    this.loadMasData(item)
+    const doi = item.getField('DOI')
+    await deleteEntriesByDOI([doi])
+    await this.loadAllMasData() // TODO make this more efficient by only setting the written data
   }
 }
 

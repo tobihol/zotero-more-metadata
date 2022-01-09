@@ -14,18 +14,66 @@ async function openDB() {
     return conn
 }
 
-function flattenS2Response(resp) {
-    const flat = {}
-    for (const key in resp) {
-        if (typeof resp[key] === 'string') { // TODO this only accepts string responses
-            flat[key] = resp[key]
+// function flattenRec(obj) {
+//     const res = JSON.parse(JSON.stringify(obj))
+//     for (const key of Object.keys(res)) {
+//         let value = res[key]
+//         const tp = typeof value
+//         if (tp === 'object') {
+//             value = flatten(value)
+//             for (const nestedKey of Object.keys(value)) {
+//                 res[`${key}.${nestedKey}`] = value[nestedKey]
+//             }
+//             delete res[key]
+//         }
+//     }
+//     return res
+// }
+
+// function unflattenRec(obj) {
+//     const res = {}
+//     for (const flatKey of Object.keys(obj)) {
+//         const keys = flatKey.split('.')
+//         keys.reduce((r, e, j) => r[e] || (r[e] = isNaN(Number(keys[j + 1])) ? (keys.length - 1 === j ? obj[flatKey] : {}) : []), res)
+//     }
+//     return res
+// }
+
+function flatten(obj: 'object') {
+    const res = {}
+    for (const key of Object.keys(obj)) {
+        const value = obj[key]
+        switch (typeof value) {
+            case 'object':
+                // res[key] = `${JSON.stringify(value)}`
+                res[key] = null
+                break
+            case 'string':
+                res[key] = value
+                break
+            default:
+                res[key] = `${value}` // TODO no way this is what you should do
+                break
         }
     }
-    return flat
+    return res
+}
+
+function unflatten(obj) {
+    // const res = {}
+    // for (const key of Object.keys(obj)) {
+    //     const value = obj[key]
+    //     try {
+    //         res[key] = JSON.parse(value)
+    //     } catch {
+    //         res [key] = value
+    //     }
+    // }
+    return obj
 }
 
 async function writeItemToDB(conn, mmItem) {
-    const flatItem = flattenS2Response(mmItem)
+    const flatItem = flatten(mmItem)
 
     // add columns if needed
     await conn.executeTransaction(async () => {
@@ -87,7 +135,8 @@ export async function readAllItemsFromDB() {
                 // Zotero.debug(`column: ${column}`)
                 const columnValues = await conn.columnQueryAsync(
                     `SELECT ${column}
-                FROM ${PAPER_TABLE_NAME}`
+                FROM ${PAPER_TABLE_NAME}
+                ORDER BY DOI ASC`
                 )
                 for (const row of Object.keys(columnValues)) {
                     // Zotero.debug(`row: ${row}`)
@@ -115,9 +164,25 @@ export async function readAllItemsFromDB() {
     } catch (error) {
         Zotero.debug(`getTable Error: ${error}`)
     }
-    conn.closeDatabase()
-    return res
+    await conn.closeDatabase()
+    return unflatten(res)
+}
+
+export async function deleteEntriesByDOI(dois) {
+    const conn = await openDB()
+    try {
+        for (const doi of dois) {
+            // TODO write this as one query instead of multiple
+            await conn.queryAsync(
+                `DELETE FROM ${PAPER_TABLE_NAME}
+                WHERE DOI="${doi}"`)
+        }
+    } catch (error) {
+        Zotero.debug(`DeleteEntries Error: ${error}`)
+    }
+    await conn.closeDatabase()
 }
 
 // return await writeItems([{ "DOI": "testDOI", "CoolNewColumn": "someValue" }])
 // return await getTable()
+// return await deleteEntriesByDOI(['doi100','testDOI3'])

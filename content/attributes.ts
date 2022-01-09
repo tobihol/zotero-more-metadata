@@ -5,7 +5,7 @@ export const attributes = {
     'Other IDs': 'externalIds',
     'URL': 'url',
     'Title': 'title', // Included if no fields are specified
-    'Abstract': 'abstract',
+    // 'Abstract': 'abstract',
     'Venue': 'venue',
     'Year': 'year',
     'References': 'referenceCount',

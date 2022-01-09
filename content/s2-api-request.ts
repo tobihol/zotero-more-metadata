@@ -84,7 +84,7 @@ export function requestChainS2(item, fields) {
     })
     ).catch(err=>{
       // semantic scholar cant find the doi
-      reject(`S2 can't find the DOI ${doi}`)
+      reject(`S2 Request Error ${err}`)
     }
     )
   })
