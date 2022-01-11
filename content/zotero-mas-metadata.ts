@@ -3,7 +3,7 @@ declare const ZoteroItemPane: any
 declare const Components: any
 declare const window: any
 
-import { getData, setData, removeData, getPref, clearPref, loadURI, getValueWithKeyString } from './utils'
+import { getPref, clearPref, loadURI, getDOI } from './utils'
 import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
 import { MASProgressWindow } from './mas-progress-window'
@@ -266,7 +266,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 
   private filterItems(items: any[]): any[] {
     items = items.filter(item => item.isTopLevelItem())
-    items = items.filter(item => item.getField('DOI'))
+    items = items.filter(getDOI)
     items = items.filter(item => !item.isNote() && !item.isAttachment())
     return items
   }
@@ -327,12 +327,12 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private getMASMetaData(item, masAttr) {
-    const doi = item.getField('DOI')
+    const DOI = getDOI(item)
 
-    if (!(doi in this.masDatabase)) {
+    if (!(DOI in this.masDatabase)) {
       return this.getString('GetData.ItemNotInDatabase')
     }
-    const masData = this.masDatabase[doi]
+    const masData = this.masDatabase[DOI]
 
     let value = masData[masAttr]
 
@@ -354,7 +354,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private async setMASMetaData(conn: DBConnection, item: any, data: any) {
-    const DOI = item.getField('DOI')
+    const DOI = getDOI(item)
     data.lastUpdated = new Date().toISOString()
     const entry = { DOI, data }
     await conn.writeItemsToDB([entry])
@@ -364,7 +364,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private async removeMASMetaData(conn: DBConnection, item) {
-    const DOI = item.getField('DOI')
+    const DOI = getDOI(item)
     await conn.deleteEntriesByDOI([DOI])
 
     const entry = await conn.readItemsFromDB([DOI])
