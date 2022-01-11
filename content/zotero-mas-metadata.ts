@@ -14,7 +14,6 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   public masDatabase: object = {}
   private initialized: boolean = false
   private reloaded: boolean = typeof Zotero.MASMetaData !== 'undefined'
-  private masAttributes: string[] = []
   private observer: number = null
   private progressWin: MASProgressWindow = null
   private bundle: any
@@ -58,10 +57,10 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       .getService(Components.interfaces.nsIStringBundleService)
       .createBundle('chrome://zotero-mas-metadata/locale/zotero-mas-metadata.properties')
     this.observer = Zotero.Notifier.registerObserver(this, ['item'], 'MASMetaData')
-    this.masAttributes = Object.values(attributes.display)
     const attributesToDisplay = attributes.display
     this.patchXUL(attributesToDisplay)
     this.patchFunctions(attributesToDisplay)
+    // Zotero.Schema.schemaUpdatePromise is an alternative that takes longer
     Zotero.uiReadyPromise.then(async () => {
       await this.loadAllMasData()
     })
@@ -276,41 +275,55 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     items = this.filterItems(items)
     if (items.length === 0 || (this.progressWin && !this.progressWin.finished)) return
     const conn = new DBConnection()
+    this.progressWin = new MASProgressWindow(operation, items.length)
+    let promise: Promise<any>
     switch (operation) {
       case 'update':
-        this.progressWin = new MASProgressWindow('update', items.length)
-        const promises = []
-        const attributesToRequest = Object.values(attributes.request).join(',')
-        for (const item of items) {
-          const promise = requestChainS2(item, attributesToRequest)
-            .then(async (data: any) => {
-              await this.setMASMetaData(conn, item, data)
-              this.progressWin.next()
-            })
-            .catch(error => {
-              this.progressWin.next(true)
-              Zotero.alert(null, 'MAS MetaData', `${error}`)
-            })
-          promises.push(promise)
-        }
-        Promise.all(promises).finally(() => {
-          conn.close()
-          this.progressWin.finish()
-        })
+        promise = this.updateMetaData(conn, items)
         break
       case 'remove':
-        this.progressWin = new MASProgressWindow('remove', items.length)
-        for (const item of items) {
-          await this.removeMASMetaData(conn, item)
-          this.progressWin.next()
-        }
-        conn.close()
-        this.progressWin.finish()
+        promise = this.removeMetaData(conn, items)
         break
       default:
         conn.close()
+        this.progressWin.finish()
+        // TODO throw some error instead
+        Zotero.alter(null, 'test','cant happen')
         break
     }
+    promise.finally(() => {
+      conn.close()
+      this.progressWin.finish()
+    })
+  }
+
+  private async updateMetaData(conn, items) {
+    const promises = []
+    const attributesToRequest = Object.values(attributes.request).join(',')
+    for (const item of items) {
+      const promise = requestChainS2(item, attributesToRequest)
+        .then(async (data: any) => {
+          await this.setMASMetaData(conn, item, data)
+          this.progressWin.next()
+        })
+        .catch(error => {
+          this.progressWin.next(true)
+          Zotero.alert(null, 'MAS MetaData', `${error}`)
+        })
+      promises.push(promise)
+    }
+    return Promise.all(promises)
+  }
+
+  private async removeMetaData(conn, items) {
+    const promises = []
+    for (const item of items) {
+      const promise = this.removeMASMetaData(conn, item)
+        .then(() => this.progressWin.next())
+        .catch(() => this.progressWin.next(true))
+      promises.push(promise)
+    }
+    return Promise.all(promises)
   }
 
   private getMASMetaData(item, masAttr) {
@@ -346,20 +359,16 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     const entry = { DOI, data }
     await conn.writeItemsToDB([entry])
 
-    const newEntry = await conn.readItemFromDB(DOI)
-    if (newEntry) this.masDatabase[DOI] = newEntry.data
-
-    // this.masDatabase[data.DOI] = data
+    const newEntry = await conn.readItemsFromDB([DOI])
+    if (newEntry.length === 1) this.masDatabase[DOI] = newEntry[0].data
   }
 
   private async removeMASMetaData(conn: DBConnection, item) {
     const DOI = item.getField('DOI')
     await conn.deleteEntriesByDOI([DOI])
 
-    const entry = await conn.readItemFromDB(DOI)
-    if (!entry) delete this.masDatabase[DOI]
-
-    // delete this.masDatabase[DOI]
+    const entry = await conn.readItemsFromDB([DOI])
+    if (entry.length === 0) delete this.masDatabase[DOI]
   }
 }
 
