@@ -62,7 +62,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     this.patchFunctions(attributesToDisplay)
     // Zotero.Schema.schemaUpdatePromise is an alternative that takes longer
     Zotero.uiReadyPromise.then(async () => {
-      await this.loadAllMasData()
+      await this.dbStartup()
     })
   }
 
@@ -70,21 +70,17 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     Zotero.Notifier.unregisterObserver(this.observer)
   }
 
-  private async loadAllMasData() {
+  private async dbStartup() {
     const conn = new DBConnection()
+    // create table if needed and check integrity of db
     await conn.createTable() // TODO make this more descriptive
     await conn.check()
+    // delete entries that are no longer in the zotero db
+    const ids = await Zotero.DB.columnQueryAsync('SELECT itemID FROM items') // TODO check if this is equivalent to getAllItems()
+    await conn.deleteEntriesOtherThanIDs(ids)
+    // load the remaining entries
     this.masDatabase = await conn.readAllItemsFromDB()
     conn.close()
-  }
-
-  private listToObjectDB(list) {
-    const res = {}
-    for (const value of list) {
-      const key = value.DOI
-      res[key] = value
-    }
-    return res
   }
 
   private async getAllItems() {
@@ -327,12 +323,12 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private getMASMetaData(item, masAttr) {
-    const DOI = getDOI(item)
+    const itemID = item.id
 
-    if (!(DOI in this.masDatabase)) {
+    if (!(itemID in this.masDatabase)) {
       return this.getString('GetData.ItemNotInDatabase')
     }
-    const masData = this.masDatabase[DOI]
+    const masData = this.masDatabase[itemID]
 
     let value = masData[masAttr]
 
@@ -354,21 +350,21 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private async setMASMetaData(conn: DBConnection, item: any, data: any) {
-    const DOI = getDOI(item)
+    const itemID = item.id
     data.lastUpdated = new Date().toISOString()
-    const entry = { DOI, data }
+    const entry = { itemID, data }
     await conn.writeItemsToDB([entry])
 
-    const newEntry = await conn.readItemsFromDB([DOI])
-    if (newEntry.length === 1) this.masDatabase[DOI] = newEntry[0].data
+    const newEntry = await conn.readItemsFromDB([itemID])
+    if (newEntry.length === 1) this.masDatabase[itemID] = newEntry[0].data
   }
 
   private async removeMASMetaData(conn: DBConnection, item) {
-    const DOI = getDOI(item)
-    await conn.deleteEntriesByDOI([DOI])
+    const itemID = item.id
+    await conn.deleteEntriesByIDs([itemID])
 
-    const entry = await conn.readItemsFromDB([DOI])
-    if (entry.length === 0) delete this.masDatabase[DOI]
+    const entry = await conn.readItemsFromDB([itemID])
+    if (entry.length === 0) delete this.masDatabase[itemID]
   }
 }
 

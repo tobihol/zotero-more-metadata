@@ -9,7 +9,7 @@ export class DBConnection {
     public async createTable() {
         await this.conn.queryAsync(
             `CREATE TABLE IF NOT EXISTS "${PAPER_TABLE_NAME}" (
-             DOI TEXT PRIMARY KEY NOT NULL,
+             itemID TEXT PRIMARY KEY NOT NULL,
              data TEXT
              )`
         )
@@ -35,17 +35,17 @@ export class DBConnection {
         })
     }
 
-    public async readItemsFromDB(dois: string[]): Promise<any[]>{
-        const doiString = JSON.stringify(dois).slice(1, -1)
+    public async readItemsFromDB(ids: string[]): Promise<any[]> {
+        const idString = JSON.stringify(ids).slice(1, -1)
         let queryRes = null
         await this.conn.executeTransaction(async () => {
             queryRes = await this.conn.queryAsync(
                 `SELECT * 
             FROM ${PAPER_TABLE_NAME}
-            WHERE DOI IN (${doiString})
+            WHERE itemID IN (${idString})
             `)
         })
-        const res = queryRes.map(entry => ({ DOI: entry.DOI, data: JSON.parse(entry.data) }))
+        const res = queryRes.map(entry => ({ itemID: entry.itemID, data: JSON.parse(entry.data) }))
         return res
     }
 
@@ -53,27 +53,39 @@ export class DBConnection {
         const res = {}
         const queryRes = await this.conn.queryAsync(`SELECT * FROM ${PAPER_TABLE_NAME}`)
         for (const row of queryRes) {
-            res[row.DOI] = JSON.parse(row.data)
+            res[row.itemID] = JSON.parse(row.data)
         }
         return res
     }
 
-    public async deleteEntriesByDOI(dois: string[]) {
+    public async deleteEntriesByIDs(ids: string[]) {
+        const idString = JSON.stringify(ids).slice(1, -1)
         await this.conn.executeTransaction(async () => {
-            for (const doi of dois) {
-                // TODO write this as one query instead of multiple
-                await this.conn.queryAsync(
-                    `DELETE FROM ${PAPER_TABLE_NAME}
-                    WHERE DOI="${doi}"`)
-            }
+            await this.conn.queryAsync(
+                `DELETE FROM ${PAPER_TABLE_NAME}
+                WHERE itemID IN (${idString})`)
         })
     }
 
-    private async writeItemToDB(mmItem: { DOI: string, data: JSON }) {
+    public async deleteEntriesOtherThanIDs(ids: string[]) {
+        const idString = JSON.stringify(ids).slice(1, -1)
+        await this.conn.executeTransaction(async () => {
+            await this.conn.queryAsync(
+                `DELETE FROM ${PAPER_TABLE_NAME}
+                WHERE itemID NOT IN (${idString})`)
+        })
+    }
+
+    public async getAllIDs() {
+        return await this.conn.columnQueryAsync((`SELECT itemID FROM ${PAPER_TABLE_NAME}`))
+    }
+
+    private async writeItemToDB(mmItem: { itemID: string, data: JSON }) {
         const stringData = JSON.stringify(mmItem.data)
         await this.conn.queryAsync(
-            `INSERT OR REPLACE INTO ${PAPER_TABLE_NAME} (DOI, data) VALUES(?, ?)`,
-            [mmItem.DOI, stringData]
+            `INSERT OR REPLACE INTO ${PAPER_TABLE_NAME} (itemID, data) VALUES(?, ?)`,
+            [mmItem.itemID, stringData]
         )
     }
+
 }
