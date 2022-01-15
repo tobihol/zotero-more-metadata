@@ -76,7 +76,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     await conn.createTable() // TODO make this more descriptive
     await conn.check()
     // delete entries that are no longer in the zotero db
-    const ids = await Zotero.DB.columnQueryAsync('SELECT itemID FROM items') // TODO check if this is equivalent to getAllItems()
+    const ids = await Zotero.DB.columnQueryAsync('SELECT itemID FROM items') // TODO check wether this should be done with getAllItems() instead
     await conn.deleteEntriesOtherThanIDs(ids)
     // load the remaining entries
     this.masDatabase = await conn.readAllItemsFromDB()
@@ -110,6 +110,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       newTestbox.setAttribute('class', 'plain')
       newTestbox.setAttribute('readonly', 'true')
       newTestbox.setAttribute('value', 'undefined')
+      if (['URL', 'Authors', 'TLDR'].includes(attr)) newTestbox.setAttribute('multiline', 'true')
       newRow.appendChild(newLabel)
       newRow.appendChild(newTestbox)
       tabsContainer.appendChild(newRow)
@@ -343,6 +344,17 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       case 'lastUpdated':
         value = new Date(value).toLocaleString()
         break
+      case 'authors':
+        value = value.map(author => `${author.name}, h-index: ${author.hIndex}`).join('\n')
+        break
+      case 'tldr':
+        value = value.text
+        break
+      case 'externalIds':
+        value = value.DOI
+        break
+      case 'fieldsOfStudy':
+        value = value.join(', ')
       default:
         break
     }

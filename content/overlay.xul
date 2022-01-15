@@ -11,7 +11,7 @@
   </menupopup>
 
   <!-- mas-metadata right click options -->
-  <popup id="zotero-itemmenu">
+  <menupopup id="zotero-itemmenu">
     <menu class="menu-iconic" id="zotero-itemmenu-mas-metadata-menu" label="&mas-metadata-menu-label;">
         <menupopup id="zotero-itemmenu-mas-metadata-menupopup">
             <menuitem
@@ -24,13 +24,13 @@
                 oncommand="Zotero.MASMetaData.updateSelectedItems('remove');"/>
         </menupopup>
     </menu>
-  </popup>
+  </menupopup>
   
   <!-- mas-metadata tab -->
   <tabs id="zotero-editpane-tabs">
     <tab id="zotero-editpane-mas-metadata-tab" label="&mas-metadata-tab-label;"/>
   </tabs>
-  <tabpanels id="zotero-view-item" flex="1">
+  <tabpanels id="zotero-view-item" class="zotero-view-item" flex="1">
     <tabpanel id="zotero-editpane-mas-metadata-tabpanel" flex="1" orient="vertical">
       <vbox flex="1" margin="0" padding="0">
         <grid id="mas-metadata-editpane-item-box" width="100px">
