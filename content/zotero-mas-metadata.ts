@@ -276,7 +276,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     let promise: Promise<any>
     switch (operation) {
       case 'update':
-        promise = this.updateMetaData(conn, items)
+        promise = this.updateMetaData2(conn, items)
         break
       case 'remove':
         promise = this.removeMetaData(conn, items)
@@ -284,8 +284,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       default:
         conn.close()
         this.progressWin.finish()
-        // TODO throw some error instead
-        Zotero.alter(null, 'test','cant happen')
+        Zotero.logError(new Error(`Invalid operation: ${operation}`))
         break
     }
     promise.finally(() => {
@@ -310,6 +309,47 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       promises.push(promise)
     }
     return Promise.all(promises)
+  }
+
+  private async updateMetaData2(conn, items) {
+    const attributesToRequest = Object.values(attributes.request).join(',')
+    let aborted = false
+    for (const item of items) {
+      if (aborted) break
+      const promise = requestChainS2(item, attributesToRequest)
+        .then(async (data: any) => {
+          await this.setMASMetaData(conn, item, data)
+          this.progressWin.next()
+        })
+        .catch(error => {
+          // TODO do this with enums
+          const errorRateLimit = 403
+          const errorNoDoi = 404
+          if ('status' in error) {
+            switch (error.status) {
+              // rate limit reached
+              case errorRateLimit:
+                this.progressWin.operation = 'ratelimit'
+                aborted = true
+                break
+              // cant find doi
+              case errorNoDoi:
+                this.progressWin.next(true)
+                break
+              default:
+                this.progressWin.operation = 'abort'
+                aborted = true
+                Zotero.alert(null, 'MAS MetaData', `S2 API request error: ${JSON.stringify(error)}`)
+                break
+            }
+          } else {
+            this.progressWin.operation = 'abort'
+            aborted = true
+            Zotero.alert(null, 'MAS MetaData', error)
+          }
+        })
+      await promise
+    }
   }
 
   private async removeMetaData(conn, items) {

@@ -1,14 +1,16 @@
 declare const Zotero: any
 
+import { patch as $patch$ } from './monkey-patch'
+
 const closeTimer = 4000
 
 export class MASProgressWindow {
   public finished: boolean = false
+  public operation: string
   private progressWin: any
   private nAll: number = 0
   private nDone: number = 0
   private nFail: number = 0
-  private operation: string
 
   constructor(operation: string, nAll: number) {
     this.progressWin = new Zotero.ProgressWindow({ closeOnClick: false })
@@ -29,11 +31,11 @@ export class MASProgressWindow {
     this.updateText()
   }
 
-  public finish() {
+  public finish(outcome = this.operation) {
     this.finished = true
     try {
       this.progressWin.close()
-      this.endWindow(this.operation)
+      this.endWindow(outcome)
     } catch (error) {
       Zotero.logError(error)
     }
@@ -90,24 +92,32 @@ export class MASProgressWindow {
         headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.update')
         icon = 'chrome://zotero/skin/tick.png'
         text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.update', {
-          nSuccess: this.nDone - this.nFail,
-          nAll: this.nAll,
+          nSuccess: (this.nDone - this.nFail).toString(),
+          nAll: this.nAll.toString(),
         })
         break
       case 'remove':
         headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.remove')
         icon = 'chrome://zotero/skin/tick.png'
         text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.remove', {
-          nSuccess: this.nDone - this.nFail,
-          nAll: this.nAll,
+          nSuccess: (this.nDone - this.nFail).toString(),
+          nAll: this.nAll.toString(),
         })
         break
       case 'abort':
         headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.abort')
         icon = 'chrome://zotero/skin/cross.png'
         text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.abort', {
-          nSuccess: this.nDone - this.nFail,
-          nAll: this.nAll,
+          nSuccess: (this.nDone - this.nFail).toString(),
+          nAll: this.nAll.toString(),
+        })
+        break
+      case 'ratelimit':
+        headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.ratelimit')
+        icon = 'chrome://zotero/skin/cross.png'
+        text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.ratelimit', {
+          nSuccess: (this.nDone - this.nFail).toString(),
+          nAll: this.nAll.toString(),
         })
         break
       default:

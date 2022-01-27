@@ -1,7 +1,6 @@
 declare const Zotero: any
 const DB_NAME = 'more-metadata'
 const PAPER_TABLE_NAME = 'papers'
-const AUTHOR_TABLE_NAME = 'authors'
 
 export class DBConnection {
     private conn = new Zotero.DBConnection(DB_NAME)
@@ -19,7 +18,7 @@ export class DBConnection {
         try {
             await this.conn.integrityCheck()
         } catch (error) {
-            Zotero.alert(null, 'MAS MetaData', error)
+            Zotero.logError(error)
         }
     }
 

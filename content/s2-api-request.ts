@@ -79,13 +79,14 @@ export function requestChainS2(item, fields) {
     if (!doi) {
       reject("Entry doesn't have a DOI.")
     }
-    getPaperWithDoi(doi, fields).then((resp=>{
-      resolve(resp)
-    })
-    ).catch(err=>{
-      // semantic scholar cant find the doi
-      reject(`S2 Request Error ${err}`)
-    }
-    )
+    getPaperWithDoi(doi, fields)
+      .then((resp => {
+        resolve(resp)
+      }))
+      .catch(err => {
+        // err = {"status":403,"statusText":"Forbidden"} if rate limit is reached
+        // err = {"status":404,"statusText":"Not Found"} if doi not found
+        reject(err)
+      })
   })
 }
