@@ -39,6 +39,15 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     this.updateItems(items, operation)
   }
 
+  public async setTabState() {
+    const tab = document.getElementById('zotero-editpane-mas-metadata-tab')
+    // TODO currently justs wait 100ms for preference to be update, there probably is a better way to do this
+    const timeout = 100
+    setTimeout(() => {
+      tab.setAttribute('hidden', (!getPref('tab')).toString())
+    }, timeout)
+  }
+
   public getString(name: string, params: object = {}) {
     const str = this.bundle.GetStringFromName(name)
     return str.replace(/{{(.*?)}}/g, (match, param) => `${(params[param] || '')}`)
@@ -62,7 +71,13 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     this.patchFunctions(attributesToDisplay)
     // Zotero.Schema.schemaUpdatePromise is an alternative that takes longer
     Zotero.uiReadyPromise.then(async () => {
+      // Zotero.debug('[TESTING1]' + getPref('tab').toString())
+      this.setTabState()
       await this.dbStartup()
+      // Zotero.debug('[TESTING2]' + getPref('tab').toString())
+    })
+    Zotero.Schema.schemaUpdatePromise.then(() => {
+      // Zotero.debug('[TESTING3]' + getPref('tab').toString())
     })
   }
 
