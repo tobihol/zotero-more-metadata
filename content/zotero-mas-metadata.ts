@@ -276,7 +276,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     let promise: Promise<any>
     switch (operation) {
       case 'update':
-        promise = this.updateMetaData2(conn, items)
+        promise = this.updateMetaData(conn, items)
         break
       case 'remove':
         promise = this.removeMetaData(conn, items)
@@ -294,26 +294,12 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private async updateMetaData(conn, items) {
-    const promises = []
-    const attributesToRequest = Object.values(attributes.request).join(',')
-    for (const item of items) {
-      const promise = requestChainS2(item, attributesToRequest)
-        .then(async (data: any) => {
-          await this.setMASMetaData(conn, item, data)
-          this.progressWin.next()
-        })
-        .catch(error => {
-          this.progressWin.next(true)
-          Zotero.alert(null, 'MAS MetaData', `${error}`)
-        })
-      promises.push(promise)
-    }
-    return Promise.all(promises)
-  }
-
-  private async updateMetaData2(conn, items) {
     const attributesToRequest = Object.values(attributes.request).join(',')
     let aborted = false
+    this.progressWin.addOnClickFunc(() => {
+      this.progressWin.operation = 'abort'
+      aborted = true
+    })
     for (const item of items) {
       if (aborted) break
       const promise = requestChainS2(item, attributesToRequest)
@@ -325,6 +311,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
           // TODO do this with enums
           const errorRateLimit = 403
           const errorNoDoi = 404
+          // TODO that status is in error doesn't mean that it is an api error
           if ('status' in error) {
             switch (error.status) {
               // rate limit reached

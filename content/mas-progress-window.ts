@@ -1,6 +1,6 @@
 declare const Zotero: any
 
-import { patch as $patch$ } from './monkey-patch'
+import { ProgressWindow } from './ProgressWindow.js'
 
 const closeTimer = 4000
 
@@ -13,7 +13,7 @@ export class MASProgressWindow {
   private nFail: number = 0
 
   constructor(operation: string, nAll: number) {
-    this.progressWin = new Zotero.ProgressWindow({ closeOnClick: false })
+    this.progressWin = new ProgressWindow({ closeOnClick: false })
     this.progressWin.progress = new this.progressWin.ItemProgress()
     this.operation = operation
     this.nAll = nAll
@@ -21,6 +21,12 @@ export class MASProgressWindow {
     this.updateHeadline()
     this.updateText()
     this.progressWin.show()
+  }
+
+  public addOnClickFunc(func) {
+    this.progressWin.getProgressWindow().addEventListener('mouseup', () => {
+      func()
+    })
   }
 
   public next(fail = false) {
