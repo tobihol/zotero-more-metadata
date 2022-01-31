@@ -7,7 +7,7 @@ import { getPref, clearPref, loadURI, getDOI } from './utils'
 import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
 import { MASProgressWindow } from './mas-progress-window'
-import { requestChainS2 } from './s2-api-request'
+import { requestChainS2, StatusCode } from './s2-api-request'
 import { DBConnection } from './db'
 
 const MASMetaData = new class { // tslint:disable-line:variable-name
@@ -41,8 +41,8 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 
   public async setTabState() {
     const tab = document.getElementById('zotero-editpane-mas-metadata-tab')
-    // TODO currently justs wait 100ms for preference to be update, there probably is a better way to do this
-    const timeout = 100
+    // TODO currently justs wait 10ms for preference to be update, there probably is a better way to do this
+    const timeout = 10
     setTimeout(() => {
       tab.setAttribute('hidden', (!getPref('tab')).toString())
     }, timeout)
@@ -71,13 +71,8 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     this.patchFunctions(attributesToDisplay)
     // Zotero.Schema.schemaUpdatePromise is an alternative that takes longer
     Zotero.uiReadyPromise.then(async () => {
-      // Zotero.debug('[TESTING1]' + getPref('tab').toString())
       this.setTabState()
       await this.dbStartup()
-      // Zotero.debug('[TESTING2]' + getPref('tab').toString())
-    })
-    Zotero.Schema.schemaUpdatePromise.then(() => {
-      // Zotero.debug('[TESTING3]' + getPref('tab').toString())
     })
   }
 
@@ -88,10 +83,10 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   private async dbStartup() {
     const conn = new DBConnection()
     // create table if needed and check integrity of db
-    await conn.createTable() // TODO make this more descriptive
+    await conn.createTable()
     await conn.check()
     // delete entries that are no longer in the zotero db
-    const ids = await Zotero.DB.columnQueryAsync('SELECT itemID FROM items') // TODO check wether this should be done with getAllItems() instead
+    const ids = await Zotero.DB.columnQueryAsync('SELECT itemID FROM items')
     await conn.deleteEntriesOtherThanIDs(ids)
     // load the remaining entries
     this.masDatabase = await conn.readAllItemsFromDB()
@@ -310,45 +305,36 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 
   private async updateMetaData(conn, items) {
     const attributesToRequest = Object.values(attributes.request).join(',')
-    let aborted = false
+    let stop = false
     this.progressWin.addOnClickFunc(() => {
       this.progressWin.operation = 'abort'
-      aborted = true
+      stop = true
     })
     for (const item of items) {
-      if (aborted) break
+      if (stop) break
       const promise = requestChainS2(item, attributesToRequest)
         .then(async (data: any) => {
           await this.setMASMetaData(conn, item, data)
           this.progressWin.next()
         })
         .catch(error => {
-          // TODO do this with enums
-          const errorRateLimit = 403
-          const errorNoDoi = 404
-          // TODO that status is in error doesn't mean that it is an api error
-          if ('status' in error) {
-            switch (error.status) {
-              // rate limit reached
-              case errorRateLimit:
-                this.progressWin.operation = 'ratelimit'
-                aborted = true
-                break
-              // cant find doi
-              case errorNoDoi:
-                this.progressWin.next(true)
-                break
-              default:
-                this.progressWin.operation = 'abort'
-                aborted = true
-                Zotero.alert(null, 'MAS MetaData', `S2 API request error: ${JSON.stringify(error)}`)
-                break
+          switch (error.status) {
+            // rate limit reached
+            case StatusCode.Ratelimit:
+              this.progressWin.operation = 'ratelimit'
+              stop = true
+              break
+            // cant find doi
+            case StatusCode.NotFound:
+              this.progressWin.next(true)
+              break
+            // other errors
+            default:
+              this.progressWin.operation = 'abort'
+              stop = true
+              Zotero.alert(null, 'MAS MetaData', JSON.stringify(error))
+              break
             }
-          } else {
-            this.progressWin.operation = 'abort'
-            aborted = true
-            Zotero.alert(null, 'MAS MetaData', error)
-          }
         })
       await promise
     }

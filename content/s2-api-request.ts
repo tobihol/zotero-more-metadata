@@ -1,5 +1,11 @@
 declare const Zotero: any
 
+export enum StatusCode {
+  Success = 200,
+  Ratelimit = 403,
+  NotFound = 404,
+}
+
 const baseUrl = 'https://api.semanticscholar.org/graph/v1/'
 
 function makeRequest(opts) {
