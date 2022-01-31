@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<?xml-stylesheet href="chrome://zotero-mas-metadata/skin/overlay.css" type="text/css"?>
-<!DOCTYPE window SYSTEM "chrome://zotero-mas-metadata/locale/overlay.dtd">
+<?xml-stylesheet href="chrome://zotero-more-metadata/skin/overlay.css" type="text/css"?>
+<!DOCTYPE window SYSTEM "chrome://zotero-more-metadata/locale/overlay.dtd">
 
-<overlay id="zotero-mas-metadata-overlay"
+<overlay id="zotero-more-metadata-overlay"
 	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
   <!-- preference menu -->
@@ -64,5 +64,5 @@
 
 	<!-- Include the main extension logic -->
   <script src="chrome://zotero/content/include.js"/>
-  <script src="chrome://zotero-mas-metadata/content/include.js"/>
+  <script src="chrome://zotero-more-metadata/content/include.js"/>
 </overlay>

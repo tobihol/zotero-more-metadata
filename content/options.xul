@@ -2,7 +2,7 @@
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="chrome://zotero-platform/content/preferences.css"?>
 
-<!DOCTYPE window SYSTEM "chrome://zotero-mas-metadata/locale/options.dtd">
+<!DOCTYPE window SYSTEM "chrome://zotero-more-metadata/locale/options.dtd">
 
 <prefwindow id="mas-metadata-pref" title="&mas-metadata-preferences;" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
 
@@ -20,7 +20,7 @@
 
     <hbox style="margin: 0">
       <label style="margin-right:0px" value="&for-more-information;"/>
-      <label style="margin-left:0px; margin-right:0px" class="text-link" onclick="Zotero.MASMetaData.loadURI('https://github.com/tobihol/zotero-mas-metadata');" value="&mas-metadata-github-page;"/>
+      <label style="margin-left:0px; margin-right:0px" class="text-link" onclick="Zotero.MASMetaData.loadURI('https://github.com/tobihol/zotero-more-metadata');" value="&mas-metadata-github-page;"/>
       <label style="margin-left:0px; margin-right:0px" value="."/>
     </hbox>
 

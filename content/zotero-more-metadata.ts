@@ -6,7 +6,7 @@ declare const window: any
 import { getPref, clearPref, loadURI, getDOI } from './utils'
 import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
-import { MASProgressWindow } from './mas-progress-window'
+import { MASProgressWindow } from './more-progress-window'
 import { requestChainS2, StatusCode } from './s2-api-request'
 import { DBConnection } from './db'
 
@@ -20,7 +20,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 
   public openPreferenceWindow(paneID, action) {
     const io = { pane: paneID, action }
-    window.openDialog('chrome://zotero-mas-metadata/content/options.xul',
+    window.openDialog('chrome://zotero-more-metadata/content/options.xul',
       'mas-metadata-pref',
       'chrome,titlebar,toolbar,centerscreen' + Zotero.Prefs.get('browser.preferences.instantApply', true) ? 'dialog=no' : 'modal', io
     )
@@ -64,7 +64,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     this.initialized = true
     this.bundle = Components.classes['@mozilla.org/intl/stringbundle;1']
       .getService(Components.interfaces.nsIStringBundleService)
-      .createBundle('chrome://zotero-mas-metadata/locale/zotero-mas-metadata.properties')
+      .createBundle('chrome://zotero-more-metadata/locale/zotero-more-metadata.properties')
     this.observer = Zotero.Notifier.registerObserver(this, ['item'], 'MASMetaData')
     const attributesToDisplay = attributes.display
     this.patchXUL(attributesToDisplay)

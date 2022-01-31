@@ -75,7 +75,7 @@ const config = {
   context: path.resolve(__dirname, './content'),
 
   entry: {
-    MASMetaData: './zotero-mas-metadata.ts',
+    MASMetaData: './zotero-more-metadata.ts',
   },
 
   output: {
