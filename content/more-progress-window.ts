@@ -4,7 +4,7 @@ import { ProgressWindow } from './ProgressWindow.js'
 
 const closeTimer = 4000
 
-export class MASProgressWindow {
+export class MoreProgressWindow {
   public finished: boolean = false
   public operation: string
   private progressWin: any
@@ -52,10 +52,10 @@ export class MASProgressWindow {
     let headline = 'Default headline'
     switch (this.operation) {
       case 'update':
-        headline = Zotero.MASMetaData.getString('MASProgressWindow.headline.update')
+        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.headline.update')
         break
       case 'remove':
-        headline = Zotero.MASMetaData.getString('MASProgressWindow.headline.remove')
+        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.headline.remove')
         break
       default:
         break
@@ -67,13 +67,13 @@ export class MASProgressWindow {
     let text = 'Default text'
     switch (this.operation) {
       case 'update':
-        text = Zotero.MASMetaData.getString('MASProgressWindow.text.update', {
+        text = Zotero.MoreMetaData.getString('MoreProgressWindow.text.update', {
           nDone: this.nDone,
           nAll: this.nAll,
         })
         break
       case 'remove':
-        text = Zotero.MASMetaData.getString('MASProgressWindow.text.remove', {
+        text = Zotero.MoreMetaData.getString('MoreProgressWindow.text.remove', {
           nDone: this.nDone,
           nAll: this.nAll,
         })
@@ -90,38 +90,38 @@ export class MASProgressWindow {
     let text = 'Default text'
     switch (outcome) {
       case 'error':
-        headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.error')
+        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.error')
         icon = 'chrome://zotero/skin/cross.png'
-        text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.error')
+        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.error')
         break
       case 'update':
-        headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.update')
+        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.update')
         icon = 'chrome://zotero/skin/tick.png'
-        text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.update', {
+        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.update', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })
         break
       case 'remove':
-        headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.remove')
+        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.remove')
         icon = 'chrome://zotero/skin/tick.png'
-        text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.remove', {
+        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.remove', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })
         break
       case 'abort':
-        headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.abort')
+        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.abort')
         icon = 'chrome://zotero/skin/cross.png'
-        text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.abort', {
+        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.abort', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })
         break
       case 'ratelimit':
-        headline = Zotero.MASMetaData.getString('MASProgressWindow.end.headline.ratelimit')
+        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.ratelimit')
         icon = 'chrome://zotero/skin/cross.png'
-        text = Zotero.MASMetaData.getString('MASProgressWindow.end.text.ratelimit', {
+        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.ratelimit', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })

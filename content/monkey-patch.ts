@@ -1,4 +1,4 @@
-const marker = 'MASMetaDataMonkeyPatched'
+const marker = 'MoreMetaDataMonkeyPatched'
 
 export function repatch(object, method, patcher) {
     object[method] = patcher(object[method])

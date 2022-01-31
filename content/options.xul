@@ -14,13 +14,13 @@
     <groupbox>
       <caption label="&general-settings;"/>
       <checkbox id="id-mas-metadata-autoretrieve" label="&autoretrieve-label;" preference="pref-mas-metadata-autoretrieve"/>
-      <checkbox id="id-mas-metadata-tab" label="&tab-label;" preference="pref-mas-metadata-tab" oncommand="Zotero.MASMetaData.setTabState()"/>
+      <checkbox id="id-mas-metadata-tab" label="&tab-label;" preference="pref-mas-metadata-tab" oncommand="Zotero.MoreMetaData.setTabState()"/>
     </groupbox>
     <separator class="thin"/>
 
     <hbox style="margin: 0">
       <label style="margin-right:0px" value="&for-more-information;"/>
-      <label style="margin-left:0px; margin-right:0px" class="text-link" onclick="Zotero.MASMetaData.loadURI('https://github.com/tobihol/zotero-more-metadata');" value="&mas-metadata-github-page;"/>
+      <label style="margin-left:0px; margin-right:0px" class="text-link" onclick="Zotero.MoreMetaData.loadURI('https://github.com/tobihol/zotero-more-metadata');" value="&mas-metadata-github-page;"/>
       <label style="margin-left:0px; margin-right:0px" value="."/>
     </hbox>
 

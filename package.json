@@ -38,7 +38,7 @@
     "zotero-plugin": "1.0.22"
   },
   "xpi": {
-    "name": "MASMetaData for Zotero",
+    "name": "MoreMetaData for Zotero",
     "updateLink": "https://github.com/tobihol/zotero-more-metadata/releases/download/v{version}/zotero-more-metadata-{version}.xpi",
     "releaseURL": "https://github.com/tobihol/zotero-more-metadata/releases/download/release/"
   }

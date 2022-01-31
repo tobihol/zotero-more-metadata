@@ -58,7 +58,7 @@ const config = {
       if (fs.existsSync(wrapped_webpack)) {
         let js = fs.readFileSync(`${target_dir}/${webpack_js}`, 'utf-8')
 
-        const prefix = 'if (!Zotero.WebPackedMASMetaData) {\n\n'
+        const prefix = 'if (!Zotero.WebPackedMoreMetaData) {\n\n'
         const postfix = '\n\n}\n'
 
         if (!js.startsWith(prefix)) js = `${prefix}${js}${postfix}`
@@ -75,14 +75,14 @@ const config = {
   context: path.resolve(__dirname, './content'),
 
   entry: {
-    MASMetaData: './zotero-more-metadata.ts',
+    MoreMetaData: './zotero-more-metadata.ts',
   },
 
   output: {
     globalObject: 'Zotero',
     path: path.resolve(__dirname, `./${target_dir}`),
     filename: '[name].js',
-    jsonpFunction: 'WebPackedMASMetaData',
+    jsonpFunction: 'WebPackedMoreMetaData',
     devtoolLineToLine: true,
     pathinfo: true,
     library: 'Zotero.[name]',

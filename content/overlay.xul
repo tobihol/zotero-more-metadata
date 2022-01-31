@@ -7,7 +7,7 @@
 
   <!-- preference menu -->
   <menupopup id="menu_ToolsPopup">
-    <menuitem id="menu_Tools-mas-metadata-preferences" label="&mas-metadata-preferences-label;" oncommand="Zotero.MASMetaData.openPreferenceWindow();"/>
+    <menuitem id="menu_Tools-mas-metadata-preferences" label="&mas-metadata-preferences-label;" oncommand="Zotero.MoreMetaData.openPreferenceWindow();"/>
   </menupopup>
 
   <!-- mas-metadata right click options -->
@@ -17,11 +17,11 @@
             <menuitem
                 id="zotero-itemmenu-mas-metadata-update"
                 label="&mas-metadata-menuitem-label-update;"
-                oncommand="Zotero.MASMetaData.updateSelectedItems('update');"/>
+                oncommand="Zotero.MoreMetaData.updateSelectedItems('update');"/>
             <menuitem
                 id="zotero-itemmenu-mas-metadata-remove"
                 label="&mas-metadata-menuitem-label-remove;"
-                oncommand="Zotero.MASMetaData.updateSelectedItems('remove');"/>
+                oncommand="Zotero.MoreMetaData.updateSelectedItems('remove');"/>
         </menupopup>
     </menu>
   </menupopup>

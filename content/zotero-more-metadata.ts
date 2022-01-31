@@ -6,16 +6,16 @@ declare const window: any
 import { getPref, clearPref, loadURI, getDOI } from './utils'
 import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
-import { MASProgressWindow } from './more-progress-window'
+import { MoreProgressWindow } from './more-progress-window'
 import { requestChainS2, StatusCode } from './s2-api-request'
 import { DBConnection } from './db'
 
-const MASMetaData = new class { // tslint:disable-line:variable-name
+const MoreMetaData = new class { // tslint:disable-line:variable-name
   public masDatabase: object = {}
   private initialized: boolean = false
-  private reloaded: boolean = typeof Zotero.MASMetaData !== 'undefined'
+  private reloaded: boolean = typeof Zotero.MoreMetaData !== 'undefined'
   private observer: number = null
-  private progressWin: MASProgressWindow = null
+  private progressWin: MoreProgressWindow = null
   private bundle: any
 
   public openPreferenceWindow(paneID, action) {
@@ -65,7 +65,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     this.bundle = Components.classes['@mozilla.org/intl/stringbundle;1']
       .getService(Components.interfaces.nsIStringBundleService)
       .createBundle('chrome://zotero-more-metadata/locale/zotero-more-metadata.properties')
-    this.observer = Zotero.Notifier.registerObserver(this, ['item'], 'MASMetaData')
+    this.observer = Zotero.Notifier.registerObserver(this, ['item'], 'MoreMetaData')
     const attributesToDisplay = attributes.display
     this.patchXUL(attributesToDisplay)
     this.patchFunctions(attributesToDisplay)
@@ -158,7 +158,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       if (!item.isNote() && !item.isAttachment()) {
         Object.keys(attributesToDisplay).forEach(attr => {
           const masAttr = attributesToDisplay[attr]
-          const value = MASMetaData.getMASMetaData(item, masAttr)
+          const value = MoreMetaData.getMoreMetaData(item, masAttr)
           document.getElementById(`mas-metadata-tab-${attr}-display`).setAttribute('value', value)
         })
       }
@@ -180,7 +180,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
           const item = this
           const masAttr = attributesToDisplay[attr]
           if (!this.isNote() && !this.isAttachment()) {
-            const value = MASMetaData.getMASMetaData(item, masAttr)
+            const value = MoreMetaData.getMoreMetaData(item, masAttr)
             return value
           } else {
             return '' // TODO: do proper error handling here
@@ -198,7 +198,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       if (item.isNote() || item.isAttachment()) return ''
       const attr = col.id.slice(match[0].length)
       const masAttr = attributesToDisplay[attr]
-      const value = MASMetaData.getMASMetaData(item, masAttr)
+      const value = MoreMetaData.getMoreMetaData(item, masAttr)
       return value
     })
 
@@ -227,7 +227,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 
         const masMenu = doc.createElementNS(ns, 'menu')
         // masMenu.setAttribute('label', Zotero.getString('pane.items.columnChooser.moreColumns'))
-        masMenu.setAttribute('label', 'MASMetaData')
+        masMenu.setAttribute('label', 'MoreMetaData')
         masMenu.setAttribute('anonid', id)
 
         const masMenuPopup = doc.createElementNS(ns, 'menupopup')
@@ -282,7 +282,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     items = this.filterItems(items)
     if (items.length === 0 || (this.progressWin && !this.progressWin.finished)) return
     const conn = new DBConnection()
-    this.progressWin = new MASProgressWindow(operation, items.length)
+    this.progressWin = new MoreProgressWindow(operation, items.length)
     let promise: Promise<any>
     switch (operation) {
       case 'update':
@@ -314,7 +314,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
       if (stop) break
       const promise = requestChainS2(item, attributesToRequest)
         .then(async (data: any) => {
-          await this.setMASMetaData(conn, item, data)
+          await this.setMoreMetaData(conn, item, data)
           this.progressWin.next()
         })
         .catch(error => {
@@ -332,7 +332,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
             default:
               this.progressWin.operation = 'abort'
               stop = true
-              Zotero.alert(null, 'MAS MetaData', JSON.stringify(error))
+              Zotero.alert(null, 'More MetaData', JSON.stringify(error))
               break
             }
         })
@@ -343,7 +343,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
   private async removeMetaData(conn, items) {
     const promises = []
     for (const item of items) {
-      const promise = this.removeMASMetaData(conn, item)
+      const promise = this.removeMoreMetaData(conn, item)
         .then(() => this.progressWin.next())
         .catch(() => this.progressWin.next(true))
       promises.push(promise)
@@ -351,7 +351,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     return Promise.all(promises)
   }
 
-  private getMASMetaData(item, masAttr) {
+  private getMoreMetaData(item, masAttr) {
     const itemID = item.id
 
     if (!(itemID in this.masDatabase)) {
@@ -389,7 +389,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     return value
   }
 
-  private async setMASMetaData(conn: DBConnection, item: any, data: any) {
+  private async setMoreMetaData(conn: DBConnection, item: any, data: any) {
     const itemID = item.id
     data.lastUpdated = new Date().toISOString()
     const entry = { itemID, data }
@@ -399,7 +399,7 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
     if (newEntry.length === 1) this.masDatabase[itemID] = newEntry[0].data
   }
 
-  private async removeMASMetaData(conn: DBConnection, item) {
+  private async removeMoreMetaData(conn: DBConnection, item) {
     const itemID = item.id
     await conn.deleteEntriesByIDs([itemID])
 
@@ -409,13 +409,13 @@ const MASMetaData = new class { // tslint:disable-line:variable-name
 }
 
 window.addEventListener('load', event => {
-  MASMetaData.load().catch(err => Zotero.logError(err))
+  MoreMetaData.load().catch(err => Zotero.logError(err))
 }, false)
 window.addEventListener('unload', event => {
-  MASMetaData.unload().catch(err => Zotero.logError(err))
+  MoreMetaData.unload().catch(err => Zotero.logError(err))
 })
 
-export = MASMetaData
+export = MoreMetaData
 
 // otherwise this entry point won't be reloaded: https://github.com/webpack/webpack/issues/156
 delete require.cache[module.id]
