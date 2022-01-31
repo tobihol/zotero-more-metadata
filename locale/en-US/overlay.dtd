@@ -1,5 +1,5 @@
-<!ENTITY mas-metadata-preferences-label "MoreMetaData Preferences…">
-<!ENTITY mas-metadata-menu-label "MoreMetaData">
-<!ENTITY mas-metadata-menuitem-label-update "Update metadata">
-<!ENTITY mas-metadata-menuitem-label-remove "Remove metadata">
-<!ENTITY mas-metadata-tab-label "MoreMetaData">
+<!ENTITY more-metadata-preferences-label "MoreMetaData Preferences…">
+<!ENTITY more-metadata-menu-label "MoreMetaData">
+<!ENTITY more-metadata-menuitem-label-update "Update metadata">
+<!ENTITY more-metadata-menuitem-label-remove "Remove metadata">
+<!ENTITY more-metadata-tab-label "MoreMetaData">

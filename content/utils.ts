@@ -14,13 +14,13 @@ export function getDOI(item) {
  */
 
 export function getPref(pref: string): any {
-  return Zotero.Prefs.get('extensions.mas-metadata.' + pref, true)
+  return Zotero.Prefs.get('extensions.more-metadata.' + pref, true)
 }
 
 export function setPref(pref: string, value: any) {
-  return Zotero.Prefs.set('extensions.mas-metadata.' + pref, value, true)
+  return Zotero.Prefs.set('extensions.more-metadata.' + pref, value, true)
 }
 
 export function clearPref(pref: string) {
-  return Zotero.Prefs.clear('extensions.mas-metadata.' + pref, true)
+  return Zotero.Prefs.clear('extensions.more-metadata.' + pref, true)
 }

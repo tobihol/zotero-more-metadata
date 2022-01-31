@@ -11,7 +11,7 @@ import { requestChainS2, StatusCode } from './s2-api-request'
 import { DBConnection } from './db'
 
 const MoreMetaData = new class { // tslint:disable-line:variable-name
-  public masDatabase: object = {}
+  public moreDatabase: object = {}
   private initialized: boolean = false
   private reloaded: boolean = typeof Zotero.MoreMetaData !== 'undefined'
   private observer: number = null
@@ -21,7 +21,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
   public openPreferenceWindow(paneID, action) {
     const io = { pane: paneID, action }
     window.openDialog('chrome://zotero-more-metadata/content/options.xul',
-      'mas-metadata-pref',
+      'more-metadata-pref',
       'chrome,titlebar,toolbar,centerscreen' + Zotero.Prefs.get('browser.preferences.instantApply', true) ? 'dialog=no' : 'modal', io
     )
   }
@@ -40,7 +40,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
   }
 
   public async setTabState() {
-    const tab = document.getElementById('zotero-editpane-mas-metadata-tab')
+    const tab = document.getElementById('zotero-editpane-more-metadata-tab')
     // TODO currently justs wait 10ms for preference to be update, there probably is a better way to do this
     const timeout = 10
     setTimeout(() => {
@@ -89,7 +89,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     const ids = await Zotero.DB.columnQueryAsync('SELECT itemID FROM items')
     await conn.deleteEntriesOtherThanIDs(ids)
     // load the remaining entries
-    this.masDatabase = await conn.readAllItemsFromDB()
+    this.moreDatabase = await conn.readAllItemsFromDB()
     conn.close()
   }
 
@@ -108,15 +108,15 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     const xul = 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul'
     const attributeKeyList = Object.keys(attributesToDisplay)
     // patch for tab
-    const tabsContainer = document.getElementById('mas-metadata-fields')
+    const tabsContainer = document.getElementById('more-metadata-fields')
     attributeKeyList.forEach(attr => {
       const newRow = document.createElementNS(xul, 'row')
       newRow.setAttribute('class', 'zotero-item-first-row')
       const newLabel = document.createElement('label')
-      newLabel.setAttribute('id', `mas-metadata-tab-${attr}-label`)
+      newLabel.setAttribute('id', `more-metadata-tab-${attr}-label`)
       newLabel.setAttribute('value', `${attr}:`)
       const newTestbox = document.createElement('textbox')
-      newTestbox.setAttribute('id', `mas-metadata-tab-${attr}-display`)
+      newTestbox.setAttribute('id', `more-metadata-tab-${attr}-display`)
       newTestbox.setAttribute('class', 'plain')
       newTestbox.setAttribute('readonly', 'true')
       newTestbox.setAttribute('value', 'undefined')
@@ -130,8 +130,8 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     const columnsContainer = document.getElementById('zotero-items-columns-header')
     attributeKeyList.forEach(attr => {
       const newTreecol = document.createElementNS(xul, 'treecol')
-      newTreecol.setAttribute('id', `zotero-items-column-mas-metadata-${attr}`)
-      newTreecol.setAttribute('mas-metadata-menu', 'true')
+      newTreecol.setAttribute('id', `zotero-items-column-more-metadata-${attr}`)
+      newTreecol.setAttribute('more-metadata-menu', 'true')
       newTreecol.setAttribute('label', `${attr}`)
       newTreecol.setAttribute('flex', '1')
       newTreecol.setAttribute('insertafter', 'zotero-items-column-title')
@@ -157,9 +157,9 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       await original.apply(this, arguments)
       if (!item.isNote() && !item.isAttachment()) {
         Object.keys(attributesToDisplay).forEach(attr => {
-          const masAttr = attributesToDisplay[attr]
-          const value = MoreMetaData.getMoreMetaData(item, masAttr)
-          document.getElementById(`mas-metadata-tab-${attr}-display`).setAttribute('value', value)
+          const moreAttr = attributesToDisplay[attr]
+          const value = MoreMetaData.getMoreMetaData(item, moreAttr)
+          document.getElementById(`more-metadata-tab-${attr}-display`).setAttribute('value', value)
         })
       }
     })
@@ -174,13 +174,13 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     // tslint:disable-next-line: space-before-function-paren
     $patch$(Zotero.Item.prototype, 'getField', original => function (field, unformatted, includeBaseMapped) {
       if (typeof field === 'string') {
-        const match = field.match(/^mas-metadata-/)
+        const match = field.match(/^more-metadata-/)
         if (match) {
           const attr = field.slice(match[0].length)
           const item = this
-          const masAttr = attributesToDisplay[attr]
+          const moreAttr = attributesToDisplay[attr]
           if (!this.isNote() && !this.isAttachment()) {
-            const value = MoreMetaData.getMoreMetaData(item, masAttr)
+            const value = MoreMetaData.getMoreMetaData(item, moreAttr)
             return value
           } else {
             return '' // TODO: do proper error handling here
@@ -192,13 +192,13 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
 
     // tslint:disable-next-line: space-before-function-paren
     $patch$(Zotero.ItemTreeView.prototype, 'getCellText', original => function (row, col) {
-      const match = col.id.match(/^zotero-items-column-mas-metadata-/)
+      const match = col.id.match(/^zotero-items-column-more-metadata-/)
       if (!match) return original.apply(this, arguments)
       const item = this.getRow(row).ref
       if (item.isNote() || item.isAttachment()) return ''
       const attr = col.id.slice(match[0].length)
-      const masAttr = attributesToDisplay[attr]
-      const value = MoreMetaData.getMoreMetaData(item, masAttr)
+      const moreAttr = attributesToDisplay[attr]
+      const value = MoreMetaData.getMoreMetaData(item, moreAttr)
       return value
     })
 
@@ -223,26 +223,26 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
 
       try {
         // More Columns menu
-        const id = prefix + 'mas-metadata-menu'
+        const id = prefix + 'more-metadata-menu'
 
-        const masMenu = doc.createElementNS(ns, 'menu')
-        // masMenu.setAttribute('label', Zotero.getString('pane.items.columnChooser.moreColumns'))
-        masMenu.setAttribute('label', 'MoreMetaData')
-        masMenu.setAttribute('anonid', id)
+        const moreMenu = doc.createElementNS(ns, 'menu')
+        // moreMenu.setAttribute('label', Zotero.getString('pane.items.columnChooser.moreColumns'))
+        moreMenu.setAttribute('label', 'MoreMetaData')
+        moreMenu.setAttribute('anonid', id)
 
-        const masMenuPopup = doc.createElementNS(ns, 'menupopup')
-        masMenuPopup.setAttribute('anonid', id + '-popup')
+        const moreMenuPopup = doc.createElementNS(ns, 'menupopup')
+        moreMenuPopup.setAttribute('anonid', id + '-popup')
 
         const treecols = menupopup.parentNode.parentNode
-        const subs = Array.from(treecols.getElementsByAttribute('mas-metadata-menu', 'true')).map((x: any) => x.getAttribute('label'))
-        const masItems = []
+        const subs = Array.from(treecols.getElementsByAttribute('more-metadata-menu', 'true')).map((x: any) => x.getAttribute('label'))
+        const moreItems = []
 
         for (const elem of menupopup.childNodes) {
           if (elem.localName === 'menuseparator') {
             break
           }
           if (elem.localName === 'menuitem' && subs.indexOf(elem.getAttribute('label')) !== -1) {
-            masItems.push(elem)
+            moreItems.push(elem)
           }
         }
         // Disable certain fields for feeds
@@ -254,15 +254,15 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
         }
         // Sort fields and move to submenu
         const collation = Zotero.getLocaleCollation()
-        masItems.sort((a, b) => {
+        moreItems.sort((a, b) => {
           return collation.compareString(1, a.getAttribute('label'), b.getAttribute('label'))
         })
-        masItems.forEach(elem => {
-          masMenuPopup.appendChild(menupopup.removeChild(elem))
+        moreItems.forEach(elem => {
+          moreMenuPopup.appendChild(menupopup.removeChild(elem))
         })
 
-        masMenu.appendChild(masMenuPopup)
-        menupopup.insertBefore(masMenu, lastChild)
+        moreMenu.appendChild(moreMenuPopup)
+        menupopup.insertBefore(moreMenu, lastChild)
       } catch (e) {
         Components.utils.reportError(e)
         Zotero.debug(e, 1)
@@ -351,15 +351,15 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     return Promise.all(promises)
   }
 
-  private getMoreMetaData(item, masAttr) {
+  private getMoreMetaData(item, moreAttr) {
     const itemID = item.id
 
-    if (!(itemID in this.masDatabase)) {
+    if (!(itemID in this.moreDatabase)) {
       return this.getString('GetData.ItemNotInDatabase')
     }
-    const masData = this.masDatabase[itemID]
+    const moreData = this.moreDatabase[itemID]
 
-    let value = masData[masAttr]
+    let value = moreData[moreAttr]
 
     // null or undefined
     if (value == null) {
@@ -367,7 +367,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     }
 
     // handle special cases of attributes
-    switch (masAttr) {
+    switch (moreAttr) {
       // display as date
       case 'lastUpdated':
         value = new Date(value).toLocaleString()
@@ -396,7 +396,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     await conn.writeItemsToDB([entry])
 
     const newEntry = await conn.readItemsFromDB([itemID])
-    if (newEntry.length === 1) this.masDatabase[itemID] = newEntry[0].data
+    if (newEntry.length === 1) this.moreDatabase[itemID] = newEntry[0].data
   }
 
   private async removeMoreMetaData(conn: DBConnection, item) {
@@ -404,7 +404,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     await conn.deleteEntriesByIDs([itemID])
 
     const entry = await conn.readItemsFromDB([itemID])
-    if (entry.length === 0) delete this.masDatabase[itemID]
+    if (entry.length === 0) delete this.moreDatabase[itemID]
   }
 }
 

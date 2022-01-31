@@ -1,2 +1,2 @@
-pref("extensions.mas-metadata.autoretrieve", true);
-pref("extensions.mas-metadata.tab", true);
+pref("extensions.more-metadata.autoretrieve", true);
+pref("extensions.more-metadata.tab", true);
