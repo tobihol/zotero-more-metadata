@@ -73,6 +73,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     Zotero.uiReadyPromise.then(async () => {
       this.setTabState()
       await this.dbStartup()
+      Zotero.getActiveZoteroPane().itemsView.refresh()
     })
   }
 
@@ -396,15 +397,25 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     await conn.writeItemsToDB([entry])
 
     const newEntry = await conn.readItemsFromDB([itemID])
-    if (newEntry.length === 1) this.moreDatabase[itemID] = newEntry[0].data
+    if (newEntry.length === 1) {
+      this.moreDatabase[itemID] = newEntry[0].data
+      Zotero.Notifier.trigger('modify', 'item', [itemID], {})
+    } else {
+      Zotero.debug(`[more-metadata]: Can't update entry ${newEntry}`)
+    }
   }
 
-  private async removeMoreMetaData(conn: DBConnection, item) {
+  private async removeMoreMetaData(conn: DBConnection, item: any) {
     const itemID = item.id
     await conn.deleteEntriesByIDs([itemID])
 
     const entry = await conn.readItemsFromDB([itemID])
-    if (entry.length === 0) delete this.moreDatabase[itemID]
+    if (entry.length === 0) {
+      delete this.moreDatabase[itemID]
+      Zotero.Notifier.trigger('modify', 'item', [itemID], {})
+    } else {
+      Zotero.debug(`[more-metadata]: Can't delete entry ${entry}`)
+    }
   }
 }
 
