@@ -65,34 +65,28 @@ function searchPaper(query, fields) {
   })
 }
 
-function getPaperWithS2Id(s2id, fields) {
+function searchPaperWithS2Id(s2id, fields) {
   const es2id = encodeURIComponent(s2id)
   return makeS2Request(`paper/${es2id}?`, {
     fields,
   })
 }
 
-function getPaperWithDoi(doi, fields) {
+function searchPaperWithDoi(doi, fields) {
   const edoi = encodeURIComponent(doi)
   return makeS2Request(`paper/DOI:${edoi}?`, {
     fields,
   })
 }
 
-export function requestChainS2(item, fields) {
+export function searchPaperWithItem(item, fields) {
   return new Promise((resolve, reject) => {
     const doi = item.getField('DOI')
     if (!doi) {
       reject("Entry doesn't have a DOI.")
     }
-    getPaperWithDoi(doi, fields)
-      .then((resp => {
-        resolve(resp)
-      }))
-      .catch(err => {
-        // err = {"status":403,"statusText":"Forbidden"} if rate limit is reached
-        // err = {"status":404,"statusText":"Not Found"} if doi not found
-        reject(err)
-      })
+    searchPaperWithDoi(doi, fields)
+      .then(resolve)
+      .catch(reject)
   })
 }

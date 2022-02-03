@@ -1,5 +1,5 @@
 /*
- * This a slight modified copy of the ProgressWindow Zotero.
+ * This a slightly modified copy of the Zotero ProgressWindow.
  * It has a getter for _ProgressWindow to allow for adding more event listeners
  */
 export function ProgressWindow (options = {}) {

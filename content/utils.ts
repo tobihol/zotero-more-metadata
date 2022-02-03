@@ -13,14 +13,14 @@ export function getDOI(item) {
  * preference management
  */
 
-export function getPref(pref: string): any {
+export function getPref(pref: string): boolean {
   return Zotero.Prefs.get('extensions.more-metadata.' + pref, true)
 }
 
-export function setPref(pref: string, value: any) {
-  return Zotero.Prefs.set('extensions.more-metadata.' + pref, value, true)
+export function setPref(pref: string, value: boolean) {
+  Zotero.Prefs.set('extensions.more-metadata.' + pref, value, true)
 }
 
 export function clearPref(pref: string) {
-  return Zotero.Prefs.clear('extensions.more-metadata.' + pref, true)
+  Zotero.Prefs.clear('extensions.more-metadata.' + pref, true)
 }

@@ -7,7 +7,7 @@ import { getPref, clearPref, loadURI, getDOI } from './utils'
 import { patch as $patch$ } from './monkey-patch'
 import { attributes } from './attributes'
 import { MoreProgressWindow } from './more-progress-window'
-import { requestChainS2, StatusCode } from './s2-api-request'
+import { searchPaperWithItem, StatusCode } from './s2-api-request'
 import { DBConnection } from './db'
 
 const MoreMetaData = new class { // tslint:disable-line:variable-name
@@ -312,7 +312,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     })
     for (const item of items) {
       if (stop) break
-      const promise = requestChainS2(item, attributesToRequest)
+      const promise = searchPaperWithItem(item, attributesToRequest)
         .then(async (data: any) => {
           await this.setMoreMetaData(conn, item, data)
           this.progressWin.next()
