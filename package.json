@@ -1,7 +1,7 @@
 {
   "name": "zotero-more-metadata",
   "version": "1.0.0",
-  "description": "Adds metadata from Microsoft Academic to Zotero",
+  "description": "Adds metadata from Semantic Scholar to Zotero",
   "scripts": {
     "lint": "tslint -t stylish --project .",
     "prebuild": "npm run lint",
