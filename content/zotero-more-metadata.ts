@@ -54,7 +54,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
   }
 
   public notify(action, type, ids) {
-    if (type === 'item' && action === 'add' && getPref('autoretrieve')) {
+    if (type === 'item' && action === 'add' && getPref('auto-retrieve')) {
       this.updateItems(Zotero.Items.get(ids), 'update')
     }
   }
@@ -116,14 +116,14 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       const newLabel = document.createElement('label')
       newLabel.setAttribute('id', `more-metadata-tab-${attr}-label`)
       newLabel.setAttribute('value', `${attr}:`)
-      const newTestbox = document.createElement('textbox')
-      newTestbox.setAttribute('id', `more-metadata-tab-${attr}-display`)
-      newTestbox.setAttribute('class', 'plain')
-      newTestbox.setAttribute('readonly', 'true')
-      newTestbox.setAttribute('value', 'undefined')
-      if (['URL', 'Authors', 'TLDR'].includes(attr)) newTestbox.setAttribute('multiline', 'true')
+      const newTextbox = document.createElement('textbox')
+      newTextbox.setAttribute('id', `more-metadata-tab-${attr}-display`)
+      newTextbox.setAttribute('class', 'plain')
+      newTextbox.setAttribute('readonly', 'true')
+      newTextbox.setAttribute('value', 'undefined')
+      if (['URL', 'Authors', 'TLDR'].includes(attr)) newTextbox.setAttribute('multiline', 'true')
       newRow.appendChild(newLabel)
-      newRow.appendChild(newTestbox)
+      newRow.appendChild(newTextbox)
       tabsContainer.appendChild(newRow)
     })
 
@@ -237,8 +237,8 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
         const moreMenuPopup = doc.createElementNS(ns, 'menupopup')
         moreMenuPopup.setAttribute('anonid', id + '-popup')
 
-        const treecols = menupopup.parentNode.parentNode
-        const subs = Array.from(treecols.getElementsByAttribute('more-metadata-menu', 'true')).map((x: any) => x.getAttribute('label'))
+        const treeCols = menupopup.parentNode.parentNode
+        const subs = Array.from(treeCols.getElementsByAttribute('more-metadata-menu', 'true')).map((x: any) => x.getAttribute('label'))
         const moreItems = []
 
         for (const elem of menupopup.childNodes) {
@@ -250,7 +250,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
           }
         }
         // Disable certain fields for feeds
-        const labels = Array.from(treecols.getElementsByAttribute('disabled-in', '*'))
+        const labels = Array.from(treeCols.getElementsByAttribute('disabled-in', '*'))
           .filter((e: any) => e.getAttribute('disabled-in').split(' ').indexOf(this.collectionTreeRow.type) !== -1)
           .map((e: any) => e.getAttribute('label'))
         for (const elem of menupopup.childNodes) {
@@ -290,10 +290,10 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     let promise: Promise<any>
     switch (operation) {
       case 'update':
-        promise = this.updateMetaData(conn, items)
+        promise = this.updateMetaDataOperation(conn, items)
         break
       case 'remove':
-        promise = this.removeMetaData(conn, items)
+        promise = this.removeMetaDataOperation(conn, items)
         break
       default:
         conn.close()
@@ -307,7 +307,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     })
   }
 
-  private async updateMetaData(conn, items) {
+  private async updateMetaDataOperation(conn, items) {
     const attributesToRequest = Object.values(attributes.request).join(',')
     let stop = false
     this.progressWin.addOnClickFunc(() => {
@@ -318,7 +318,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       if (stop) break
       const promise = searchPaperWithItem(item, attributesToRequest)
         .then(async (data: any) => {
-          await this.setMoreMetaData(conn, item, data)
+          await this.setMetaData(conn, item, data)
           this.progressWin.next()
         })
         .catch(error => {
@@ -336,7 +336,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
             default:
               this.progressWin.operation = 'abort'
               stop = true
-              Zotero.alert(null, 'More MetaData', JSON.stringify(error))
+              Zotero.alert(null, 'MoreMetaData', JSON.stringify(error))
               break
             }
         })
@@ -344,10 +344,10 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     }
   }
 
-  private async removeMetaData(conn, items) {
+  private async removeMetaDataOperation(conn, items) {
     const promises = []
     for (const item of items) {
-      const promise = this.removeMoreMetaData(conn, item)
+      const promise = this.removeMetaData(conn, item)
         .then(() => this.progressWin.next())
         .catch(() => this.progressWin.next(true))
       promises.push(promise)
@@ -393,7 +393,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     return value
   }
 
-  private async setMoreMetaData(conn: DBConnection, item: any, data: any) {
+  private async setMetaData(conn: DBConnection, item: any, data: any) {
     const itemID = item.id
     data.lastUpdated = new Date().toISOString()
     const entry = { itemID, data }
@@ -408,7 +408,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     }
   }
 
-  private async removeMoreMetaData(conn: DBConnection, item: any) {
+  private async removeMetaData(conn: DBConnection, item: any) {
     const itemID = item.id
     await conn.deleteEntriesByIDs([itemID])
 

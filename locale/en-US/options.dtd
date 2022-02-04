@@ -2,7 +2,7 @@
 <!ENTITY more-metadata-preferences "MoreMetaData Preferences">
 
 <!ENTITY general-settings "General Settings">
-<!ENTITY autoretrieve-label "Automatically retrieve metadata for new items">
+<!ENTITY auto-retrieve-label "Automatically retrieve metadata for new items">
 <!ENTITY tab-label "Show MoreMetaData tab">
 
 <!ENTITY for-more-information "For more information, see the ">

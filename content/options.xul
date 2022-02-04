@@ -8,12 +8,12 @@
 
   <prefpane label="&more-metadata-preferences;" id="more-metadata-prefpane">
     <preferences>
-      <preference id="pref-more-metadata-autoretrieve" name="extensions.more-metadata.autoretrieve" type="bool"/>
+      <preference id="pref-more-metadata-auto-retrieve" name="extensions.more-metadata.auto-retrieve" type="bool"/>
       <preference id="pref-more-metadata-tab" name="extensions.more-metadata.tab" type="bool"/>
     </preferences>
     <groupbox>
       <caption label="&general-settings;"/>
-      <checkbox id="id-more-metadata-autoretrieve" label="&autoretrieve-label;" preference="pref-more-metadata-autoretrieve"/>
+      <checkbox id="id-more-metadata-auto-retrieve" label="&auto-retrieve-label;" preference="pref-more-metadata-auto-retrieve"/>
       <checkbox id="id-more-metadata-tab" label="&tab-label;" preference="pref-more-metadata-tab" oncommand="Zotero.MoreMetaData.setTabState()"/>
     </groupbox>
     <separator class="thin"/>
