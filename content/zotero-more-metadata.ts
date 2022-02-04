@@ -4,7 +4,7 @@ declare const Components: any
 declare const window: any
 
 import { getPref, clearPref, loadURI, getDOI } from './utils'
-import { patch as $patch$ } from './monkey-patch'
+import { patch, repatch } from './monkey-patch'
 import { attributes } from './attributes'
 import { MoreProgressWindow } from './more-progress-window'
 import { searchPaperWithItem, StatusCode } from './s2-api-request'
@@ -154,7 +154,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
      */
 
     // tslint:disable-next-line: space-before-function-paren
-    $patch$(ZoteroItemPane, 'viewItem', original => async function (item, _mode, _index) {
+    patch(ZoteroItemPane, 'viewItem', original => async function (item, _mode, _index) {
       await original.apply(this, arguments)
       if (!item.isNote() && !item.isAttachment()) {
         Object.keys(attributesToDisplay).forEach(attr => {
@@ -165,15 +165,14 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       }
     })
 
-    // avoid repatch
-    if (this.reloaded) { return }
 
     /**
      * patches for columns 
+     * These need to get repached after closing and opening the Zotero window. I don't know why though.
      */
 
     // tslint:disable-next-line: space-before-function-paren
-    $patch$(Zotero.Item.prototype, 'getField', original => function (field, unformatted, includeBaseMapped) {
+    repatch(Zotero.Item.prototype, 'getField', original => function (field, unformatted, includeBaseMapped) {
       if (typeof field === 'string') {
         const match = field.match(/^more-metadata-/)
         if (match) {
@@ -184,15 +183,16 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
             const value = MoreMetaData.getMoreMetaData(item, moreAttr)
             return value
           } else {
-            return '' // TODO: do proper error handling here
+            return ''
           }
         }
       }
       return original.apply(this, arguments)
     })
 
+
     // tslint:disable-next-line: space-before-function-paren
-    $patch$(Zotero.ItemTreeView.prototype, 'getCellText', original => function (row, col) {
+    repatch(Zotero.ItemTreeView.prototype, 'getCellText', original => function (row, col) {
       const match = col.id.match(/^zotero-items-column-more-metadata-/)
       if (!match) return original.apply(this, arguments)
       const item = this.getRow(row).ref
@@ -203,12 +203,15 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       return value
     })
 
+    // avoid repatch
+    if (this.reloaded) { return }
+
     /**
      * patches for columns submenu
      */
 
     // tslint:disable-next-line: space-before-function-paren
-    $patch$(Zotero.ItemTreeView.prototype, 'onColumnPickerShowing', original => function (event) {
+    patch(Zotero.ItemTreeView.prototype, 'onColumnPickerShowing', original => function (event) {
       const menupopup = event.originalTarget
 
       const ns = 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul'
