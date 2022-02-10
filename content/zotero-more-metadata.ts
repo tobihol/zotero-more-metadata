@@ -6,7 +6,7 @@ declare const window: any
 import { getPref, clearPref, loadURI, getDOI, moreDebug, moreAlert, getLocalization } from './utils'
 import { patch, repatch } from './monkey-patch'
 import { attributes } from './attributes'
-import { MoreProgressWindow } from './more-progress-window'
+import { MoreProgressWindow, Operation } from './more-progress-window'
 import { searchPaperWithDoi, StatusCode } from './s2-api-request'
 import { DBConnection } from './db'
 
@@ -55,7 +55,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
 
   public notify(action, type, ids) {
     if (type === 'item' && action === 'add' && getPref('auto-retrieve')) {
-      this.updateItems(Zotero.Items.get(ids), 'update')
+      this.updateItems(Zotero.Items.get(ids), Operation.Update)
     }
   }
 
@@ -87,7 +87,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     await conn.createTable()
     await conn.check()
     // delete entries that are no longer in the zotero db
-    const ids = await Zotero.DB.columnQueryAsync('SELECT itemID FROM items')
+    const ids = await Zotero.DB.columnQueryAsync('SELECT ItemID FROM items')
     await conn.deleteEntriesOtherThanIDs(ids)
     // load the remaining entries
     this.moreDatabase = await conn.readAllItemsFromDB()
@@ -288,10 +288,10 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     this.progressWin = new MoreProgressWindow(operation, items.length)
     let promise: Promise<any>
     switch (operation) {
-      case 'update':
+      case Operation.Update:
         promise = this.updateMetaDataOperation(conn, items)
         break
-      case 'remove':
+      case Operation.Remove:
         promise = this.removeMetaDataOperation(conn, items)
         break
       default:
@@ -313,7 +313,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       stop = true
       const text = getLocalization('MoreProgressWindow.text.aborting')
       this.progressWin.setText(text)
-      this.progressWin.operation = 'abort'
+      this.progressWin.operation = Operation.Abort
     })
     for (const item of items) {
       if (stop) break
@@ -335,7 +335,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
           switch (error.status) {
             // rate limit reached
             case StatusCode.Ratelimit:
-              this.progressWin.operation = 'ratelimit'
+              this.progressWin.operation = Operation.Ratelimit
               stop = true
               break
             // cant find doi
@@ -348,7 +348,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
               break
             // other errors
             default:
-              this.progressWin.operation = 'abort'
+              this.progressWin.operation = Operation.Abort
               stop = true
               moreAlert(JSON.stringify(error))
               break
@@ -370,12 +370,12 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private getMoreMetaData(item, moreAttr) {
-    const itemID = item.id
+    const itemId = item.id
 
-    if (!(itemID in this.moreDatabase)) {
+    if (!(itemId in this.moreDatabase)) {
       return getLocalization('GetData.ItemNotInDatabase')
     }
-    const moreData = this.moreDatabase[itemID]
+    const moreData = this.moreDatabase[itemId]
 
     let value = moreData[moreAttr]
 
@@ -408,28 +408,28 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
   }
 
   private async setMetaData(conn: DBConnection, item: any, data: any) {
-    const itemID = item.id
+    const itemId = item.id
     data.lastUpdated = new Date().toISOString()
-    const entry = { itemID, data }
+    const entry = { itemId, data }
     await conn.writeItemsToDB([entry])
 
-    const newEntry = await conn.readItemsFromDB([itemID])
+    const newEntry = await conn.readItemsFromDB([itemId])
     if (newEntry.length === 1) {
-      this.moreDatabase[itemID] = newEntry[0].data
-      Zotero.Notifier.trigger('modify', 'item', [itemID], {})
+      this.moreDatabase[itemId] = newEntry[0].data
+      Zotero.Notifier.trigger('modify', 'item', [itemId], {})
     } else {
       moreDebug(`Can't update entry ${newEntry}`)
     }
   }
 
   private async removeMetaData(conn: DBConnection, item: any) {
-    const itemID = item.id
-    await conn.deleteEntriesByIDs([itemID])
+    const itemId = item.id
+    await conn.deleteEntriesByIDs([itemId])
 
-    const entry = await conn.readItemsFromDB([itemID])
+    const entry = await conn.readItemsFromDB([itemId])
     if (entry.length === 0) {
-      delete this.moreDatabase[itemID]
-      Zotero.Notifier.trigger('modify', 'item', [itemID], {})
+      delete this.moreDatabase[itemId]
+      Zotero.Notifier.trigger('modify', 'item', [itemId], {})
     } else {
       moreDebug(`Can't delete entry ${entry}`)
     }

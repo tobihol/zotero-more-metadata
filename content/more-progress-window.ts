@@ -3,6 +3,14 @@ declare const Zotero: any
 import { ProgressWindow } from './ProgressWindow.js'
 import { getLocalization } from './utils'
 
+export enum Operation {
+  Update = 'update',
+  Remove = 'remove',
+  Error = 'error',
+  Abort = 'abort',
+  Ratelimit = 'ratelimit',
+}
+
 const closeTimer = 4000
 
 export class MoreProgressWindow {
@@ -72,10 +80,10 @@ export class MoreProgressWindow {
     const icon = `chrome://zotero/skin/toolbar-advanced-search${Zotero.hiDPI ? '@2x' : ''}.png`
     let headline = 'Default headline'
     switch (this.operation) {
-      case 'update':
+      case Operation.Update:
         headline = getLocalization('MoreProgressWindow.headline.update')
         break
-      case 'remove':
+      case Operation.Remove:
         headline = getLocalization('MoreProgressWindow.headline.remove')
         break
       default:
@@ -87,13 +95,13 @@ export class MoreProgressWindow {
   private updateText() {
     let text = 'Default text'
     switch (this.operation) {
-      case 'update':
+      case Operation.Update:
         text = getLocalization('MoreProgressWindow.text.update', {
           nDone: this.nDone,
           nAll: this.nAll,
         })
         break
-      case 'remove':
+      case Operation.Remove:
         text = getLocalization('MoreProgressWindow.text.remove', {
           nDone: this.nDone,
           nAll: this.nAll,
@@ -110,12 +118,12 @@ export class MoreProgressWindow {
     let icon = ''
     let text = 'Default text'
     switch (outcome) {
-      case 'error':
+      case Operation.Error:
         headline = getLocalization('MoreProgressWindow.end.headline.error')
         icon = 'chrome://zotero/skin/cross.png'
         text = getLocalization('MoreProgressWindow.end.text.error')
         break
-      case 'update':
+      case Operation.Update:
         headline = getLocalization('MoreProgressWindow.end.headline.update')
         icon = 'chrome://zotero/skin/tick.png'
         text = getLocalization('MoreProgressWindow.end.text.update', {
@@ -123,7 +131,7 @@ export class MoreProgressWindow {
           nAll: this.nAll.toString(),
         })
         break
-      case 'remove':
+      case Operation.Remove:
         headline = getLocalization('MoreProgressWindow.end.headline.remove')
         icon = 'chrome://zotero/skin/tick.png'
         text = getLocalization('MoreProgressWindow.end.text.remove', {
@@ -131,7 +139,7 @@ export class MoreProgressWindow {
           nAll: this.nAll.toString(),
         })
         break
-      case 'abort':
+      case Operation.Abort:
         headline = getLocalization('MoreProgressWindow.end.headline.abort')
         icon = 'chrome://zotero/skin/cross.png'
         text = getLocalization('MoreProgressWindow.end.text.abort', {
@@ -139,7 +147,7 @@ export class MoreProgressWindow {
           nAll: this.nAll.toString(),
         })
         break
-      case 'ratelimit':
+      case Operation.Ratelimit:
         headline = getLocalization('MoreProgressWindow.end.headline.ratelimit')
         icon = 'chrome://zotero/skin/cross.png'
         text = getLocalization('MoreProgressWindow.end.text.ratelimit', {
@@ -154,7 +162,7 @@ export class MoreProgressWindow {
     this.progressWin.changeHeadline(headline)
     this.progressWin.progress.setIcon(icon)
     this.progressWin.progress.setText(text)
-    if (outcome === 'error') {
+    if (outcome === Operation.Error) {
       this.progressWin.progress.setError()
     } else {
       this.progressWin.progress.setProgress(100) // tslint:disable-line:no-magic-numbers

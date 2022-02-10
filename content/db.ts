@@ -8,7 +8,7 @@ export class DBConnection {
     public async createTable() {
         await this.conn.queryAsync(
             `CREATE TABLE IF NOT EXISTS "${PAPER_TABLE_NAME}" (
-             itemID TEXT PRIMARY KEY NOT NULL,
+             itemId TEXT PRIMARY KEY NOT NULL,
              data TEXT
              )`
         )
@@ -41,10 +41,10 @@ export class DBConnection {
             queryRes = await this.conn.queryAsync(
                 `SELECT * 
             FROM ${PAPER_TABLE_NAME}
-            WHERE itemID IN (${idString})
+            WHERE itemId IN (${idString})
             `)
         })
-        const res = queryRes.map(entry => ({ itemID: entry.itemID, data: JSON.parse(entry.data) }))
+        const res = queryRes.map(entry => ({ itemId: entry.itemId, data: JSON.parse(entry.data) }))
         return res
     }
 
@@ -52,7 +52,7 @@ export class DBConnection {
         const res = {}
         const queryRes = await this.conn.queryAsync(`SELECT * FROM ${PAPER_TABLE_NAME}`)
         for (const row of queryRes) {
-            res[row.itemID] = JSON.parse(row.data)
+            res[row.itemId] = JSON.parse(row.data)
         }
         return res
     }
@@ -62,7 +62,7 @@ export class DBConnection {
         await this.conn.executeTransaction(async () => {
             await this.conn.queryAsync(
                 `DELETE FROM ${PAPER_TABLE_NAME}
-                WHERE itemID IN (${idString})`)
+                WHERE itemId IN (${idString})`)
         })
     }
 
@@ -71,19 +71,19 @@ export class DBConnection {
         await this.conn.executeTransaction(async () => {
             await this.conn.queryAsync(
                 `DELETE FROM ${PAPER_TABLE_NAME}
-                WHERE itemID NOT IN (${idString})`)
+                WHERE itemId NOT IN (${idString})`)
         })
     }
 
     public async getAllIDs() {
-        return await this.conn.columnQueryAsync((`SELECT itemID FROM ${PAPER_TABLE_NAME}`))
+        return await this.conn.columnQueryAsync((`SELECT itemId FROM ${PAPER_TABLE_NAME}`))
     }
 
-    private async writeItemToDB(mmItem: { itemID: string, data: JSON }) {
+    private async writeItemToDB(mmItem: { itemId: string, data: JSON }) {
         const stringData = JSON.stringify(mmItem.data)
         await this.conn.queryAsync(
-            `INSERT OR REPLACE INTO ${PAPER_TABLE_NAME} (itemID, data) VALUES(?, ?)`,
-            [mmItem.itemID, stringData]
+            `INSERT OR REPLACE INTO ${PAPER_TABLE_NAME} (itemId, data) VALUES(?, ?)`,
+            [mmItem.itemId, stringData]
         )
     }
 
