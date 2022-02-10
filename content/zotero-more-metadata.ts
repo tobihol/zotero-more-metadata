@@ -3,11 +3,11 @@ declare const ZoteroItemPane: any
 declare const Components: any
 declare const window: any
 
-import { getPref, clearPref, loadURI, getDOI, moreDebug, moreAlert } from './utils'
+import { getPref, clearPref, loadURI, getDOI, moreDebug, moreAlert, getLocalization } from './utils'
 import { patch, repatch } from './monkey-patch'
 import { attributes } from './attributes'
 import { MoreProgressWindow } from './more-progress-window'
-import { searchPaperWithItem, StatusCode } from './s2-api-request'
+import { searchPaperWithDoi, StatusCode } from './s2-api-request'
 import { DBConnection } from './db'
 
 const MoreMetaData = new class { // tslint:disable-line:variable-name
@@ -277,7 +277,6 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
 
   private filterItems(items: any[]): any[] {
     items = items.filter(item => item.isTopLevelItem())
-    items = items.filter(getDOI)
     items = items.filter(item => !item.isNote() && !item.isAttachment())
     return items
   }
@@ -311,12 +310,23 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     const attributesToRequest = Object.values(attributes.request).join(',')
     let stop = false
     this.progressWin.addOnClickFunc(() => {
-      this.progressWin.operation = 'abort'
       stop = true
+      const text = getLocalization('MoreProgressWindow.text.aborting')
+      this.progressWin.setText(text)
+      this.progressWin.operation = 'abort'
     })
     for (const item of items) {
       if (stop) break
-      const promise = searchPaperWithItem(item, attributesToRequest)
+      const doi = getDOI(item)
+      if (!doi) {
+        const title = `Title: ${item.getField('title')}`
+        const text = getLocalization('tmpProgressWindow.noDoi')
+        this.progressWin.tmpWindow(title, text)
+        moreDebug(`${item.id} has no doi.`)
+        this.progressWin.next(true)
+        continue
+      }
+      const promise = searchPaperWithDoi(doi, attributesToRequest)
         .then(async (data: any) => {
           await this.setMetaData(conn, item, data)
           this.progressWin.next()
@@ -330,6 +340,10 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
               break
             // cant find doi
             case StatusCode.NotFound:
+              const title = `Title: ${item.getField('title')}`
+              const text = getLocalization('tmpProgressWindow.notFound')
+              this.progressWin.tmpWindow(title, text)
+              moreDebug(`S2 cant find doi "${doi}" for item "${item.id}".`)
               this.progressWin.next(true)
               break
             // other errors
@@ -359,7 +373,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
     const itemID = item.id
 
     if (!(itemID in this.moreDatabase)) {
-      return this.getString('GetData.ItemNotInDatabase')
+      return getLocalization('GetData.ItemNotInDatabase')
     }
     const moreData = this.moreDatabase[itemID]
 
@@ -367,7 +381,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
 
     // null or undefined
     if (value == null) {
-      return this.getString('GetData.NoData')
+      return getLocalization('GetData.NoData')
     }
 
     // handle special cases of attributes

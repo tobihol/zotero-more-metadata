@@ -20,7 +20,7 @@ function makeRequest(opts) {
         .join('&')
     }
     const url = opts.url + params
-    moreDebug(`s2 api request: ${url}`)
+    moreDebug(`S2 api request: ${url}`)
     xhr.open(opts.method, url)
     xhr.onload = function() {
       // tslint:disable-next-line:no-magic-numbers
@@ -74,21 +74,21 @@ function searchPaperWithS2Id(s2id, fields) {
   })
 }
 
-function searchPaperWithDoi(doi, fields) {
+export function searchPaperWithDoi(doi, fields) {
   const edoi = encodeURIComponent(doi)
   return makeS2Request(`paper/DOI:${edoi}?`, {
     fields,
   })
 }
 
-export function searchPaperWithItem(item, fields) {
-  return new Promise((resolve, reject) => {
-    const doi = item.getField('DOI')
-    if (!doi) {
-      reject("Entry doesn't have a DOI.")
-    }
-    searchPaperWithDoi(doi, fields)
-      .then(resolve)
-      .catch(reject)
-  })
-}
+// export function searchPaperWithItem(item, fields) {
+//   return new Promise((resolve, reject) => {
+//     const doi = item.getField('DOI')
+//     // if (!doi) {
+//     //   reject("Entry doesn't have a DOI.")
+//     // }
+//     searchPaperWithDoi(doi, fields)
+//       .then(resolve)
+//       .catch(reject)
+//   })
+// }

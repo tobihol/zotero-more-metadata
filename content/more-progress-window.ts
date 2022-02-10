@@ -1,6 +1,7 @@
 declare const Zotero: any
 
 import { ProgressWindow } from './ProgressWindow.js'
+import { getLocalization } from './utils'
 
 const closeTimer = 4000
 
@@ -11,6 +12,7 @@ export class MoreProgressWindow {
   private nAll: number = 0
   private nDone: number = 0
   private nFail: number = 0
+  private onClickFuncs: ((data: string) => void)[] = []
 
   constructor(operation: string, nAll: number) {
     this.progressWin = new ProgressWindow({ closeOnClick: false })
@@ -24,8 +26,13 @@ export class MoreProgressWindow {
   }
 
   public addOnClickFunc(func) {
-    this.progressWin.getProgressWindow().addEventListener('mouseup', () => {
-      func()
+    this.onClickFuncs.push(func)
+    this.progressWin.getProgressWindow().addEventListener('mouseup', func)
+  }
+
+  public removeAllOneClickFuncs() {
+    this.onClickFuncs.forEach(func => {
+      this.progressWin.getProgressWindow().removeEventListener('mouseup', func)
     })
   }
 
@@ -39,12 +46,26 @@ export class MoreProgressWindow {
 
   public finish(outcome = this.operation) {
     this.finished = true
-    try {
-      this.progressWin.close()
-      this.endWindow(outcome)
-    } catch (error) {
-      Zotero.logError(error)
+    this.endWindow(outcome)
+  }
+
+  public setText(text: string) {
+    this.progressWin.progress.setText(text)
+  }
+
+  public tmpWindow(headline: string, text: string, time: number = closeTimer): ProgressWindow {
+    const cutoff = 42
+    if (headline.length > cutoff) {
+      headline = headline.slice(0, cutoff - 2) + '...'
     }
+    const tmpWindow = new ProgressWindow()
+    tmpWindow.changeHeadline(headline)
+    const icon = 'chrome://zotero/skin/cross.png'
+    tmpWindow.progress = new tmpWindow.ItemProgress(icon, text)
+    tmpWindow.progress.setError()
+    tmpWindow.show()
+    tmpWindow.startCloseTimer(time)
+    return tmpWindow
   }
 
   private updateHeadline() {
@@ -52,10 +73,10 @@ export class MoreProgressWindow {
     let headline = 'Default headline'
     switch (this.operation) {
       case 'update':
-        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.headline.update')
+        headline = getLocalization('MoreProgressWindow.headline.update')
         break
       case 'remove':
-        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.headline.remove')
+        headline = getLocalization('MoreProgressWindow.headline.remove')
         break
       default:
         break
@@ -67,13 +88,13 @@ export class MoreProgressWindow {
     let text = 'Default text'
     switch (this.operation) {
       case 'update':
-        text = Zotero.MoreMetaData.getString('MoreProgressWindow.text.update', {
+        text = getLocalization('MoreProgressWindow.text.update', {
           nDone: this.nDone,
           nAll: this.nAll,
         })
         break
       case 'remove':
-        text = Zotero.MoreMetaData.getString('MoreProgressWindow.text.remove', {
+        text = getLocalization('MoreProgressWindow.text.remove', {
           nDone: this.nDone,
           nAll: this.nAll,
         })
@@ -81,7 +102,7 @@ export class MoreProgressWindow {
       default:
         break
     }
-    this.progressWin.progress.setText(text)
+    this.setText(text)
   }
 
   private endWindow(outcome: string) {
@@ -90,38 +111,38 @@ export class MoreProgressWindow {
     let text = 'Default text'
     switch (outcome) {
       case 'error':
-        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.error')
+        headline = getLocalization('MoreProgressWindow.end.headline.error')
         icon = 'chrome://zotero/skin/cross.png'
-        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.error')
+        text = getLocalization('MoreProgressWindow.end.text.error')
         break
       case 'update':
-        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.update')
+        headline = getLocalization('MoreProgressWindow.end.headline.update')
         icon = 'chrome://zotero/skin/tick.png'
-        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.update', {
+        text = getLocalization('MoreProgressWindow.end.text.update', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })
         break
       case 'remove':
-        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.remove')
+        headline = getLocalization('MoreProgressWindow.end.headline.remove')
         icon = 'chrome://zotero/skin/tick.png'
-        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.remove', {
+        text = getLocalization('MoreProgressWindow.end.text.remove', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })
         break
       case 'abort':
-        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.abort')
+        headline = getLocalization('MoreProgressWindow.end.headline.abort')
         icon = 'chrome://zotero/skin/cross.png'
-        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.abort', {
+        text = getLocalization('MoreProgressWindow.end.text.abort', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })
         break
       case 'ratelimit':
-        headline = Zotero.MoreMetaData.getString('MoreProgressWindow.end.headline.ratelimit')
+        headline = getLocalization('MoreProgressWindow.end.headline.ratelimit')
         icon = 'chrome://zotero/skin/cross.png'
-        text = Zotero.MoreMetaData.getString('MoreProgressWindow.end.text.ratelimit', {
+        text = getLocalization('MoreProgressWindow.end.text.ratelimit', {
           nSuccess: (this.nDone - this.nFail).toString(),
           nAll: this.nAll.toString(),
         })
@@ -129,16 +150,17 @@ export class MoreProgressWindow {
       default:
         break
     }
-    const endWindow = new Zotero.ProgressWindow()
-    endWindow.changeHeadline(headline)
-    endWindow.progress = new endWindow.ItemProgress(icon, text)
+    this.removeAllOneClickFuncs()
+    this.progressWin.changeHeadline(headline)
+    this.progressWin.progress.setIcon(icon)
+    this.progressWin.progress.setText(text)
     if (outcome === 'error') {
-      endWindow.progress.setError()
+      this.progressWin.progress.setError()
     } else {
-      endWindow.progress.setProgress(100) // tslint:disable-line:no-magic-numbers
+      this.progressWin.progress.setProgress(100) // tslint:disable-line:no-magic-numbers
     }
-    endWindow.show()
-    endWindow.startCloseTimer(closeTimer)
+    this.progressWin.startCloseTimer(closeTimer)
+    this.addOnClickFunc(this.progressWin.close)
   }
 
   private capitalizeFirstLetter(word) {

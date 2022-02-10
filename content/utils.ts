@@ -17,6 +17,10 @@ export function moreAlert(message: string) {
   Zotero.alert(null, 'MoreMetaData', message)
 }
 
+export function getLocalization(name: string, params: object = {}): string {
+  return Zotero.MoreMetaData.getString(name, params)
+}
+
 /**
  * preference management
  */
