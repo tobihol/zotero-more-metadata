@@ -3,7 +3,7 @@ declare const ZoteroItemPane: any
 declare const Components: any
 declare const window: any
 
-import { getPref, clearPref, loadURI, getDOI } from './utils'
+import { getPref, clearPref, loadURI, getDOI, moreDebug, moreAlert } from './utils'
 import { patch, repatch } from './monkey-patch'
 import { attributes } from './attributes'
 import { MoreProgressWindow } from './more-progress-window'
@@ -336,7 +336,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
             default:
               this.progressWin.operation = 'abort'
               stop = true
-              Zotero.alert(null, 'MoreMetaData', JSON.stringify(error))
+              moreAlert(JSON.stringify(error))
               break
             }
         })
@@ -404,7 +404,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       this.moreDatabase[itemID] = newEntry[0].data
       Zotero.Notifier.trigger('modify', 'item', [itemID], {})
     } else {
-      Zotero.debug(`[more-metadata]: Can't update entry ${newEntry}`)
+      moreDebug(`Can't update entry ${newEntry}`)
     }
   }
 
@@ -417,7 +417,7 @@ const MoreMetaData = new class { // tslint:disable-line:variable-name
       delete this.moreDatabase[itemID]
       Zotero.Notifier.trigger('modify', 'item', [itemID], {})
     } else {
-      Zotero.debug(`[more-metadata]: Can't delete entry ${entry}`)
+      moreDebug(`Can't delete entry ${entry}`)
     }
   }
 }

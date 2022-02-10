@@ -9,6 +9,14 @@ export function getDOI(item) {
   return typeof res === 'string' ? res.toLowerCase().trim() : null
 }
 
+export function moreDebug(message: string) {
+  Zotero.debug(`[more-metadata]: ${message}`)
+}
+
+export function moreAlert(message: string) {
+  Zotero.alert(null, 'MoreMetaData', message)
+}
+
 /**
  * preference management
  */

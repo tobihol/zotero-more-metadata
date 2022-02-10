@@ -1,5 +1,7 @@
 declare const Zotero: any
 
+import { moreDebug } from './utils'
+
 export enum StatusCode {
   Success = 200,
   Ratelimit = 403,
@@ -18,7 +20,7 @@ function makeRequest(opts) {
         .join('&')
     }
     const url = opts.url + params
-    Zotero.debug(`[more-metadata]: s2 api request: ${url}`)
+    moreDebug(`s2 api request: ${url}`)
     xhr.open(opts.method, url)
     xhr.onload = function() {
       // tslint:disable-next-line:no-magic-numbers
